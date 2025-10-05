@@ -407,7 +407,6 @@
             </div>
         </div>
     </header>
-    
     <!-- 设置面板 -->
     <div id="settings-panel" class="fixed top-0 right-0 h-full w-full md:w-80 bg-light-card dark:bg-dark-card shadow-xl transform translate-x-full transition-transform duration-300 z-50 p-6 overflow-y-auto scrollbar-thin">
         <div class="flex justify-between items-center mb-6">
@@ -418,135 +417,189 @@
         </div>
         
         <div class="space-y-6">
-            <!-- 每日计划设置 -->
+            <!-- 学习计划设置 -->
             <div>
-                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text">每日学习计划</h3>
-                <div class="flex items-center gap-3 mb-2">
-                    <label for="daily-goal" class="text-light-text dark:text-dark-text w-24">每日单词数:</label>
-                    <input type="number" id="daily-goal" min="1" max="100" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text flex items-center">
+                    <i class="fa fa-calendar mr-2 text-primary"></i>学习计划设置
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <label for="daily-goal" class="text-light-text dark:text-dark-text w-24 text-sm">每日单词数:</label>
+                        <input type="number" id="daily-goal" min="1" max="100" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label for="chunk-size" class="text-light-text dark:text-dark-text w-24 text-sm">分块大小:</label>
+                        <input type="number" id="chunk-size" min="1" max="50" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label for="today-chunk" class="text-light-text dark:text-dark-text w-24 text-sm">今日学习块:</label>
+                        <select id="today-chunk" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                            <option value="1">块 1</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-between gap-2 pt-2">
+                        <button id="regenerate-plan" class="flex-1 bg-secondary hover:bg-secondary/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                            <i class="fa fa-refresh mr-1"></i>重新生成计划
+                        </button>
+                        <button id="reset-today" class="flex-1 bg-warning hover:bg-warning/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                            <i class="fa fa-undo mr-1"></i>重置进度
+                        </button>
+                    </div>
+                    <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">设置您每天计划学习的单词数量和分块</p>
                 </div>
-                <div class="flex items-center gap-3 mb-2">
-                    <label for="chunk-size" class="text-light-text dark:text-dark-text w-24">分块大小:</label>
-                    <input type="number" id="chunk-size" min="1" max="50" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
-                </div>
-                <div class="flex items-center gap-3 mb-2">
-                    <label for="today-chunk" class="text-light-text dark:text-dark-text w-24">今日学习块:</label>
-                    <select id="today-chunk" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
-                        <option value="1">块 1</option>
-                    </select>
-                </div>
-                <div class="flex justify-between gap-2">
-                    <button id="regenerate-plan" class="flex-1 bg-secondary hover:bg-secondary/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
-                        <i class="fa fa-refresh mr-1"></i>重新生成计划
-                    </button>
-                    <button id="reset-today" class="flex-1 bg-warning hover:bg-warning/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
-                        <i class="fa fa-undo mr-1"></i>重置进度
-                    </button>
-                </div>
-                <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">设置您每天计划学习的单词数量和分块</p>
             </div>
 
-            <!-- 导入单词区域 -->
+            <!-- 数据管理 -->
             <div>
-                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text">导入单词</h3>
-                <div class="border-2 border-dashed border-light-border dark:border-dark-border rounded-lg p-4 text-center hover:bg-light-border/30 dark:hover:bg-dark-border/30 transition-all duration-300 cursor-pointer">
-                    <input type="file" id="word-import" accept=".txt" class="hidden">
-                    <label for="word-import" class="cursor-pointer">
-                        <i class="fa fa-upload text-primary text-2xl mb-2"></i>
-                        <p class="text-light-text dark:text-dark-text">点击或拖拽TXT文件到此处导入</p>
-                        <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">文件名格式: 单元X.txt (例如: 单元3.txt)</p>
-                    </label>
-                </div>
-                <div id="import-status" class="mt-2 text-sm hidden"></div>
-            </div>
-            
-            <!-- 闪卡设置 -->
-            <div>
-                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text">闪卡设置</h3>
-                <div class="space-y-3">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="flashcard-auto-flip" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
-                        <span class="ml-2 text-light-text dark:text-dark-text">自动翻卡 (3秒后显示答案)</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="flashcard-show-example" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
-                        <span class="ml-2 text-light-text dark:text-dark-text">显示真题例句</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="flashcard-show-memory" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300">
-                        <span class="ml-2 text-light-text dark:text-dark-text">显示记忆方法</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="flashcard-auto-pronounce" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
-                        <span class="ml-2 text-light-text dark:text-dark-text">显示单词时自动发音</span>
-                    </label>
-                </div>
-            </div>
-            
-            <div>
-                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">外观设置</h3>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" id="dark-mode" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300">
-                    <span class="ml-2 text-light-text dark:text-dark-text">启用暗黑模式</span>
-                </label>
-            </div>
-            
-            <div>
-                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">发音设置</h3>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" id="auto-pronounce" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
-                    <span class="ml-2 text-light-text dark:text-dark-text">点击卡片时自动发音</span>
-                </label>
-            </div>
-            
-            <div>
-                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">闪卡模式设置</h3>
-                <div class="mb-2">
-                    <label class="flex items-center cursor-pointer mb-2">
-                        <input type="radio" name="review-mode" value="difficult" class="form-radio h-4 w-4 text-primary transition-all duration-300" checked>
-                        <span class="ml-2 text-light-text dark:text-dark-text">复习生词本</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer mb-2">
-                        <input type="radio" name="review-mode" value="daily" class="form-radio h-4 w-4 text-primary transition-all duration-300">
-                        <span class="ml-2 text-light-text dark:text-dark-text">复习今日词汇</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                        <input type="radio" name="review-mode" value="smart" class="form-radio h-4 w-4 text-primary transition-all duration-300">
-                        <span class="ml-2 text-light-text dark:text-dark-text">智能复习</span>
-                    </label>
-                </div>
-                <div id="smart-review-options" class="ml-6 mt-2 hidden">
-                    <label class="flex items-center cursor-pointer mb-2">
-                        <input type="checkbox" id="smart-include-difficult" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
-                        <span class="ml-2 text-light-text dark:text-dark-text text-sm">包含生词本中的今日单词</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="smart-include-mastered" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300">
-                        <span class="ml-2 text-light-text dark:text-dark-text text-sm">包含已掌握的今日单词</span>
-                    </label>
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text flex items-center">
+                    <i class="fa fa-database mr-2 text-success"></i>数据管理
+                </h3>
+                <div class="space-y-4">
+                    <!-- 导入单词区域 -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-light-text dark:text-dark-text text-sm">导入单词</h4>
+                        <div class="border-2 border-dashed border-light-border dark:border-dark-border rounded-lg p-4 text-center hover:bg-light-border/30 dark:hover:bg-dark-border/30 transition-all duration-300 cursor-pointer">
+                            <input type="file" id="word-import" accept=".txt" class="hidden">
+                            <label for="word-import" class="cursor-pointer">
+                                <i class="fa fa-upload text-primary text-xl mb-2"></i>
+                                <p class="text-light-text dark:text-dark-text text-sm">点击或拖拽TXT文件导入</p>
+                                <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">文件名格式: 单元X.txt</p>
+                            </label>
+                        </div>
+                        <div id="import-status" class="mt-2 text-sm hidden"></div>
+                    </div>
+                    
+                    <!-- 导出/同步数据 -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-light-text dark:text-dark-text text-sm">数据备份与同步</h4>
+                        <div class="space-y-2">
+                            <button id="export-data" class="w-full bg-success hover:bg-success/90 text-white rounded-lg py-2 transition-all duration-300 text-sm shadow-sm hover:shadow touch-button">
+                                <i class="fa fa-download mr-2"></i>导出学习数据
+                            </button>
+                            <button id="import-data" class="w-full bg-warning hover:bg-warning/90 text-white rounded-lg py-2 transition-all duration-300 text-sm shadow-sm hover:shadow touch-button">
+                                <i class="fa fa-upload mr-2"></i>导入学习数据
+                            </button>
+                            <input type="file" id="data-import-file" accept=".json" class="hidden">
+                            <p class="text-light-textLight dark:text-dark-textLight text-xs">导出数据包含所有学习进度、设置和生词本</p>
+                            <div id="data-import-status" class="text-sm hidden mt-2"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
+
+            <!-- 闪卡复习设置 -->
             <div>
-                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">生词本设置</h3>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" id="four-times-rule" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
-                    <span class="ml-2 text-light-text dark:text-dark-text">启用四次答对规则</span>
-                </label>
-                <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">单词需要连续答对四次才会从生词本移除</p>
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text flex items-center">
+                    <i class="fa fa-repeat mr-2 text-secondary"></i>闪卡复习设置
+                </h3>
+                <div class="space-y-4">
+                    <!-- 闪卡模式设置 -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-light-text dark:text-dark-text text-sm">复习模式</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="review-mode" value="difficult" class="form-radio h-4 w-4 text-primary transition-all duration-300" checked>
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">复习生词本</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="review-mode" value="daily" class="form-radio h-4 w-4 text-primary transition-all duration-300">
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">复习今日词汇</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="review-mode" value="smart" class="form-radio h-4 w-4 text-primary transition-all duration-300">
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">智能复习</span>
+                            </label>
+                        </div>
+                        <div id="smart-review-options" class="ml-6 mt-2 space-y-1 hidden">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="smart-include-difficult" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">包含生词本中的今日单词</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="smart-include-mastered" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300">
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">包含已掌握的今日单词</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 闪卡行为设置 -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-light-text dark:text-dark-text text-sm">闪卡行为</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="flashcard-auto-flip" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">自动翻卡 (3秒后显示答案)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="flashcard-show-example" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">显示真题例句</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="flashcard-show-memory" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300">
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">显示记忆方法</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="flashcard-auto-pronounce" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                                <span class="ml-2 text-light-text dark:text-dark-text text-sm">显示单词时自动发音</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
+
+            <!-- 显示与发音设置 -->
             <div>
-                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">卡片显示设置</h3>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" id="show-basic-info" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
-                    <span class="ml-2 text-light-text dark:text-dark-text">折叠时显示音标、词性和基本释义</span>
-                </label>
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text flex items-center">
+                    <i class="fa fa-eye mr-2 text-primary"></i>显示与发音设置
+                </h3>
+                <div class="space-y-4">
+                    <!-- 外观设置 -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-light-text dark:text-dark-text text-sm">外观设置</h4>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="dark-mode" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300">
+                            <span class="ml-2 text-light-text dark:text-dark-text text-sm">启用暗黑模式</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 发音设置 -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-light-text dark:text-dark-text text-sm">发音设置</h4>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-pronounce" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                            <span class="ml-2 text-light-text dark:text-dark-text text-sm">点击卡片时自动发音</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 卡片显示设置 -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-light-text dark:text-dark-text text-sm">卡片显示</h4>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="show-basic-info" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                            <span class="ml-2 text-light-text dark:text-dark-text text-sm">折叠时显示基本信息</span>
+                        </label>
+                    </div>
+                </div>
             </div>
-            
-            <div class="pt-4">
+
+            <!-- 生词本设置 -->
+            <div>
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text flex items-center">
+                    <i class="fa fa-bookmark mr-2 text-danger"></i>生词本设置
+                </h3>
+                <div class="space-y-2">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="four-times-rule" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                        <span class="ml-2 text-light-text dark:text-dark-text text-sm">启用四次答对规则</span>
+                    </label>
+                    <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">单词需要连续答对四次才会从生词本移除</p>
+                </div>
+            </div>
+
+            <!-- 保存设置按钮 -->
+            <div class="pt-4 border-t border-light-border dark:border-dark-border">
                 <button id="save-settings" class="w-full bg-primary hover:bg-primary/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-md hover:shadow-lg touch-button">
-                    保存设置
+                    <i class="fa fa-save mr-2"></i>保存设置
                 </button>
             </div>
         </div>
@@ -789,7 +842,7 @@
             <div class="text-center">
                 <!-- 主要版权和版本信息 -->
                 <p class="text-light-text dark:text-dark-text text-sm font-medium mb-3">
-                    词汇学习卡片 © 2025 MR.XJQ 版权所有 | v 5.1.0
+                    词汇学习卡片 © 2025 MR.XJQ 版权所有 | v 5.2.2
                 </p>
                 
                 <!-- 联系方式和链接 -->
@@ -2110,7 +2163,15 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                     }
                 }
             }
-
+            // 导出数据
+            document.getElementById('export-data').addEventListener('click', exportAppData);
+            
+            // 导入数据
+            document.getElementById('import-data').addEventListener('click', () => {
+                document.getElementById('data-import-file').click();
+            });
+            
+            document.getElementById('data-import-file').addEventListener('change', importAppData);
             // 监听全屏变化
             document.addEventListener('fullscreenchange', () => {
                 if (document.fullscreenElement) {
@@ -2418,7 +2479,127 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 }
             }, false);
         }
-        
+        // 添加这两个新函数到JavaScript中
+        function exportAppData() {
+            const exportData = {
+                appState: {
+                    units: appState.units,
+                    settings: appState.settings,
+                    masteredWords: appState.masteredWords,
+                    studyProgress: appState.studyProgress,
+                    difficultWords: appState.difficultWords,
+                    correctCounts: appState.correctCounts,
+                    totalChunks: appState.totalChunks,
+                    currentUnit: appState.currentUnit,
+                    currentChunk: appState.currentChunk
+                },
+                exportTime: new Date().toISOString(),
+                version: '5.1.0'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `vocabulary-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('数据导出成功', 'success');
+        }
+
+        function importAppData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    
+                    // 验证数据格式
+                    if (!importedData.appState) {
+                        throw new Error('无效的数据文件格式');
+                    }
+                    
+                    showConfirmDialog(
+                        '导入数据',
+                        '这将覆盖当前的所有学习数据，包括进度和设置。确定要继续吗？',
+                        () => {
+                            // 用户确认导入
+                            Object.assign(appState, importedData.appState);
+                            
+                            // 确保必要的数据结构存在
+                            appState.units = appState.units || { 1: [] };
+                            appState.masteredWords = appState.masteredWords || {};
+                            appState.studyProgress = appState.studyProgress || {};
+                            appState.difficultWords = appState.difficultWords || {};
+                            appState.correctCounts = appState.correctCounts || {};
+                            appState.totalChunks = appState.totalChunks || {};
+                            
+                            saveAppState();
+                            
+                            // 更新UI
+                            updateSettingsUI();
+                            updateUnitSelector();
+                            updateChunkSelector();
+                            updateTodayChunkSelector();
+                            updateChunkInfo();
+                            renderVocabularyCards();
+                            updateStats();
+                            
+                            document.getElementById('data-import-status').textContent = '数据导入成功';
+                            document.getElementById('data-import-status').className = 'text-sm text-success mt-2';
+                            document.getElementById('data-import-status').classList.remove('hidden');
+                            
+                            showToast('数据导入成功', 'success');
+                            
+                            // 重置文件输入
+                            e.target.value = '';
+                        }
+                    );
+                    
+                } catch (error) {
+                    document.getElementById('data-import-status').textContent = '导入失败：文件格式错误';
+                    document.getElementById('data-import-status').className = 'text-sm text-danger mt-2';
+                    document.getElementById('data-import-status').classList.remove('hidden');
+                    console.error('数据导入错误:', error);
+                }
+            };
+            
+            reader.readAsText(file);
+        }  
+        // 如果还没有这个函数，请添加
+        function showConfirmDialog(title, message, confirmCallback) {
+            elements.dialogTitle.textContent = title;
+            elements.dialogMessage.textContent = message;
+            elements.confirmDialog.classList.remove('opacity-0', 'pointer-events-none');
+            elements.confirmDialog.classList.add('opacity-100', 'pointer-events-auto');
+            elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+            
+            // 移除旧的事件监听器
+            elements.dialogConfirmBtn.replaceWith(elements.dialogConfirmBtn.cloneNode(true));
+            elements.dialogCancelBtn.replaceWith(elements.dialogCancelBtn.cloneNode(true));
+            
+            // 重新获取元素引用
+            const newConfirmBtn = elements.confirmDialog.querySelector('#dialog-confirm');
+            const newCancelBtn = elements.confirmDialog.querySelector('#dialog-cancel');
+            
+            newConfirmBtn.addEventListener('click', () => {
+                elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+                confirmCallback();
+            });
+            
+            newCancelBtn.addEventListener('click', () => {
+                elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+            });
+        }      
         // 渲染生词本
         function renderDifficultWords() {
         const difficultWordsList = elements.difficultWordsList;

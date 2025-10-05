@@ -2285,6 +2285,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
                 elements.overlay.classList.add('opacity-0', 'pointer-events-none');
                 elements.mobileNavMenu.classList.add('hidden');
+                closeDialog(); // 使用全局函数
                 elements.desktopNavMenu.classList.add('hidden');
             });
             
@@ -2561,7 +2562,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                             // 重置文件输入
                             e.target.value = '';
                             
-                            // 添加这行：立即关闭对话框
+                            // 使用全局函数关闭对话框
                             closeDialog();
                         }
                     );
@@ -2576,7 +2577,11 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             
             reader.readAsText(file);
         }
-
+        // 添加全局关闭对话框函数
+        function closeDialog() {
+            elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
+            elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+        }   
         // 添加关闭对话框的辅助函数
         function closeDialog() {
             elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
@@ -2594,22 +2599,22 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             elements.dialogCancelBtn.replaceWith(elements.dialogCancelBtn.cloneNode(true));
             
             // 重新获取元素引用
-            const newConfirmBtn = elements.confirmDialog.querySelector('#dialog-confirm');
-            const newCancelBtn = elements.confirmDialog.querySelector('#dialog-cancel');
+            const newConfirmBtn = document.getElementById('dialog-confirm');
+            const newCancelBtn = document.getElementById('dialog-cancel');
             
             newConfirmBtn.addEventListener('click', () => {
-                closeDialog(); // 先关闭对话框
-                confirmCallback(); // 再执行回调
+                closeDialog(); // 使用全局函数
+                confirmCallback();
             });
             
             newCancelBtn.addEventListener('click', () => {
-                closeDialog();
+                closeDialog(); // 使用全局函数
             });
             
             // 添加ESC键关闭
             const handleKeydown = (e) => {
                 if (e.key === 'Escape') {
-                    closeDialog();
+                    closeDialog(); // 使用全局函数
                     document.removeEventListener('keydown', handleKeydown);
                 }
             };

@@ -2522,7 +2522,6 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 try {
                     const importedData = JSON.parse(event.target.result);
                     
-                    // 验证数据格式
                     if (!importedData.appState) {
                         throw new Error('无效的数据文件格式');
                     }
@@ -2561,9 +2560,6 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                             
                             // 重置文件输入
                             e.target.value = '';
-                            
-                            // 使用全局函数关闭对话框
-                            closeDialog();
                         }
                     );
                     
@@ -2587,47 +2583,64 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
             elements.overlay.classList.add('opacity-0', 'pointer-events-none');
         }
+        // 在全局作用域添加这些函数
         function showConfirmDialog(title, message, confirmCallback) {
             elements.dialogTitle.textContent = title;
             elements.dialogMessage.textContent = message;
+            
+            // 显示对话框和遮罩
             elements.confirmDialog.classList.remove('opacity-0', 'pointer-events-none');
             elements.confirmDialog.classList.add('opacity-100', 'pointer-events-auto');
             elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
             
-            // 移除旧的事件监听器
-            elements.dialogConfirmBtn.replaceWith(elements.dialogConfirmBtn.cloneNode(true));
-            elements.dialogCancelBtn.replaceWith(elements.dialogCancelBtn.cloneNode(true));
+            // 清除之前的事件监听器
+            const newConfirmBtn = elements.dialogConfirmBtn.cloneNode(true);
+            const newCancelBtn = elements.dialogCancelBtn.cloneNode(true);
             
-            // 重新获取元素引用
-            const newConfirmBtn = document.getElementById('dialog-confirm');
-            const newCancelBtn = document.getElementById('dialog-cancel');
+            elements.dialogConfirmBtn.parentNode.replaceChild(newConfirmBtn, elements.dialogConfirmBtn);
+            elements.dialogCancelBtn.parentNode.replaceChild(newCancelBtn, elements.dialogCancelBtn);
             
-            newConfirmBtn.addEventListener('click', () => {
-                closeDialog(); // 使用全局函数
+            // 更新引用
+            elements.dialogConfirmBtn = newConfirmBtn;
+            elements.dialogCancelBtn = newCancelBtn;
+            
+            // 添加新的事件监听器
+            elements.dialogConfirmBtn.addEventListener('click', function handleConfirm() {
+                closeDialog();
                 confirmCallback();
+                // 移除事件监听器避免重复执行
+                elements.dialogConfirmBtn.removeEventListener('click', handleConfirm);
             });
             
-            newCancelBtn.addEventListener('click', () => {
-                closeDialog(); // 使用全局函数
+            elements.dialogCancelBtn.addEventListener('click', function handleCancel() {
+                closeDialog();
+                // 移除事件监听器避免重复执行
+                elements.dialogCancelBtn.removeEventListener('click', handleCancel);
             });
             
-            // 添加ESC键关闭
-            const handleKeydown = (e) => {
+            // ESC键关闭
+            function handleKeydown(e) {
                 if (e.key === 'Escape') {
-                    closeDialog(); // 使用全局函数
+                    closeDialog();
                     document.removeEventListener('keydown', handleKeydown);
                 }
-            };
+            }
             
             document.addEventListener('keydown', handleKeydown);
             
-            // 对话框关闭后移除ESC监听
+            // 过渡结束后清理
             elements.confirmDialog.addEventListener('transitionend', function handler() {
                 if (elements.confirmDialog.classList.contains('opacity-0')) {
                     document.removeEventListener('keydown', handleKeydown);
                     elements.confirmDialog.removeEventListener('transitionend', handler);
                 }
             });
+        }
+
+        function closeDialog() {
+            elements.confirmDialog.classList.remove('opacity-100', 'pointer-events-auto');
+            elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
+            elements.overlay.classList.add('opacity-0', 'pointer-events-none');
         }
         // 渲染生词本
         function renderDifficultWords() {

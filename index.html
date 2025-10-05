@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>词汇学习卡片</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- PWA配置 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0047b1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="词汇学习卡片">
+
+    <!-- 使用极简图标 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230047b1'/><text x='50' y='70' font-family='Arial' font-size='60' text-anchor='middle' fill='white'>V</text></svg>">
+
+    <!-- 极简Manifest -->
+    <link rel="manifest" href="data:application/manifest+json,{
+    \"name\": \"词汇卡片\",
+    \"short_name\": \"词汇卡片\", 
+    \"start_url\": \"./\",
+    \"display\": \"standalone\",
+    \"theme_color\": \"#0047b1\"
+    }">
+    <!-- Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0047b1ff',
+                        secondary: '#EC4899',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        light: {
+                            bg: '#F8FAFC',
+                            card: '#FFFFFF',
+                            text: '#1E293B',
+                            textLight: '#64748B',
+                            border: '#E2E8F0'
+                        },
+                        dark: {
+                            bg: '#0F172A',
+                            card: '#1E293B',
+                            cardHover: '#334155',
+                            text: '#F8FAFC',
+                            textLight: '#94A3B8',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-transition {
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .rotate-icon {
+                transition: transform 0.3s ease;
+            }
+            .rotate-icon.open {
+                transform: rotate(180deg);
+            }
+            .progress-bar {
+                height: 6px;
+                border-radius: 3px;
+                background-color: #E2E8F0;
+                overflow: hidden;
+            }
+            .progress-value {
+                height: 100%;
+                background-color: #4F46E5;
+                transition: width 0.5s ease;
+            }
+            .scrollbar-thin {
+                scrollbar-width: thin;
+            }
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 4px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background-color: rgba(100, 116, 139, 0.5);
+                border-radius: 2px;
+            }
+            .card-expand-content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.5s ease;
+            }
+            .card-expanded .card-expand-content {
+                max-height: 1000px;
+            }
+            .date-badge {
+                background-color: #EC4899;
+                color: white;
+                font-size: 0.7rem;
+                padding: 0.1rem 0.4rem;
+                border-radius: 0.25rem;
+                margin-left: 0.5rem;
+            }
+            
+            /* 改进移动端触控体验 */
+            .touch-button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* 移动端菜单优化 */
+            @media (max-width: 767px) {
+                .mobile-nav-container {
+                    position: fixed;
+                    top: 60px;
+                    left: 0;
+                    right: 0;
+                    z-index: 40;
+                    max-height: calc(100vh - 60px);
+                    overflow-y: auto;
+                }
+                
+                .mobile-nav-item {
+                    padding: 12px 16px;
+                    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+                }
+                
+                .mobile-select {
+                    height: 44px;
+                    font-size: 16px; /* 防止iOS缩放 */
+                }
+                
+                /* 移动端顶部按钮优化 */
+                .mobile-action-buttons {
+                    display: flex;
+                    gap: 4px;
+                }
+                
+                .mobile-action-button {
+                    width: 40px;
+                    height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 8px;
+                }
+                
+                .mobile-selectors {
+                    display: flex;
+                    gap: 8px;
+                    margin-right: 8px;
+                }
+                
+                .mobile-selector {
+                    min-width: 80px;
+                    max-width: 100px;
+                }
+            }
+            
+            /* 闪卡改进 */
+            .flashcard {
+                perspective: 1000px;
+                height: 300px;
+            }
+            
+            .flashcard-inner {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                text-align: center;
+                transition: transform 0.6s;
+                transform-style: preserve-3d;
+            }
+            
+            .flashcard.flipped .flashcard-inner {
+                transform: rotateY(180deg);
+            }
+            
+            .flashcard-front, .flashcard-back {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                -webkit-backface-visibility: hidden;
+                backface-visibility: hidden;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                overflow-y: auto;
+            }
+            
+            .flashcard-back {
+                transform: rotateY(180deg);
+            }
+            
+            .flashcard-actions {
+                position: absolute;
+                bottom: 15px;
+                left: 0;
+                right: 0;
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            /* 信息面板优化 */
+            .stats-panel {
+                padding: 12px;
+                font-size: 0.875rem;
+            }
+            
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .stats-item {
+                text-align: center;
+            }
+            
+            .stats-value {
+                font-size: 1.25rem;
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+            
+            .stats-label {
+                font-size: 0.75rem;
+                color: #64748B;
+            }
+            
+            @media (min-width: 768px) {
+                .stats-grid {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+                
+                .stats-panel {
+                    padding: 16px;
+                }
+            }
+            /* 在现有的CSS中添加 */
+            .desktop-nav-menu {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            }
+
+            /* 移动端菜单优化 */
+            @media (max-width: 767px) {
+            .mobile-nav-menu {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                right: 0;
+                background: white;
+                z-index: 40;
+                max-height: calc(100vh - 60px);
+                overflow-y: auto;
+            }
+            
+            .mobile-action-button {
+                width: 44px;
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+            }
+            }
+            /* 桌面端导航菜单 */
+            .desktop-nav-menu {
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            }
+
+            /* 移动端导航菜单优化 */
+            .mobile-nav-menu {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                right: 0;
+                background: white;
+                z-index: 40;
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+
+            .dark .mobile-nav-menu {
+                background: #1E293B;
+            }
+
+            .mobile-action-button {
+                width: 44px;
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+            }
+            
+        }
+    </style>
+</head>
+<body class="bg-light-bg dark:bg-dark-bg font-inter text-light-text dark:text-dark-text min-h-screen transition-colors duration-300">
+    <!-- 顶部导航栏 -->
+    <header class="bg-light-card dark:bg-dark-card shadow-sm sticky top-0 z-50 transition-all duration-300 py-3">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <i class="fa fa-book text-primary text-xl mr-2"></i>
+                <h1 class="text-[clamp(1.1rem,4vw,1.4rem)] font-bold text-primary">词汇学习卡片</h1>
+            </div>
+            
+            <!-- 桌面端导航 -->
+            <div class="hidden md:flex items-center gap-3">
+                <!-- 桌面端菜单按钮 -->
+                <button id="desktop-menu-toggle" class="bg-light-border dark:bg-dark-border hover:bg-light-border/70 dark:hover:bg-dark-cardHover text-light-text dark:text-dark-text rounded-lg p-2 transition-all duration-300 touch-button">
+                    <i class="fa fa-bars"></i>
+                </button>
+            </div>
+
+            <!-- 移动端导航 -->
+            <div class="flex items-center md:hidden">
+                <!-- 移动端主要操作按钮 -->
+                <button id="mobile-review-btn" class="mobile-action-button bg-secondary hover:bg-secondary/90 text-white transition-all duration-300 touch-button mr-2" title="复习">
+                    <i class="fa fa-refresh"></i>
+                </button>
+                <button id="mobile-difficult-btn" class="mobile-action-button bg-danger hover:bg-danger/90 text-white transition-all duration-300 touch-button mr-2" title="生词本">
+                    <i class="fa fa-bookmark"></i>
+                </button>
+                <button id="mobile-menu-toggle" class="bg-light-border dark:bg-dark-border hover:bg-light-border/70 dark:hover:bg-dark-cardHover text-light-text dark:text-dark-text rounded-lg p-2 transition-all duration-300 touch-button">
+                    <i class="fa fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 桌面端折叠菜单 -->
+        <div id="desktop-nav-menu" class="hidden absolute top-16 right-4 bg-light-card dark:bg-dark-card rounded-xl shadow-card p-4 min-w-64 z-40 border border-light-border dark:border-dark-border desktop-nav-menu">
+            <div class="space-y-4 w-full">
+                <!-- 单元和分块选择器 -->
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <select id="unit-selector" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
+                            <option value="1">单元 1</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <select id="chunk-selector" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
+                            <option value="1">块 1</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="expand-all" class="bg-primary hover:bg-primary/90 text-white rounded-lg py-2 px-3 flex items-center justify-center transition-all duration-300 text-sm">
+                        <i class="fa fa-plus-square-o mr-1"></i>展开
+                    </button>
+                    <button id="collapse-all" class="bg-light-border dark:bg-dark-border hover:bg-light-border/70 dark:hover:bg-dark-cardHover text-light-text dark:text-dark-text rounded-lg py-2 px-3 flex items-center justify-center transition-all duration-300 text-sm">
+                        <i class="fa fa-minus-square-o mr-1"></i>收起
+                    </button>
+                    <button id="review-btn" class="bg-secondary hover:bg-secondary/90 text-white rounded-lg py-2 px-3 flex items-center justify-center transition-all duration-300 text-sm">
+                        <i class="fa fa-refresh mr-1"></i>复习
+                    </button>
+                    <button id="difficult-btn" class="bg-danger hover:bg-danger/90 text-white rounded-lg py-2 px-3 flex items-center justify-center transition-all duration-300 text-sm">
+                        <i class="fa fa-bookmark mr-1"></i>生词
+                    </button>
+                    <button id="settings-btn" class="col-span-2 bg-warning hover:bg-warning/90 text-white rounded-lg py-2 px-3 flex items-center justify-center transition-all duration-300 text-sm">
+                        <i class="fa fa-cog mr-1"></i>设置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 移动端折叠菜单 -->
+        <div id="mobile-nav-menu" class="mobile-nav-menu hidden md:hidden bg-light-card dark:bg-dark-card shadow-lg border-t border-light-border dark:border-dark-border">
+            <div class="p-4 space-y-4 max-h-80 overflow-y-auto">
+                <!-- 选择器 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <select id="mobile-unit-selector" class="mobile-select bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-3 w-full text-base">
+                        <option value="1">单元 1</option>
+                    </select>
+                    <select id="mobile-chunk-selector" class="mobile-select bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-3 w-full text-base">
+                        <option value="1">块 1</option>
+                    </select>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="mobile-expand-all" class="bg-primary hover:bg-primary/90 text-white rounded-lg py-3 flex items-center justify-center transition-all duration-300 text-sm touch-button">
+                        <i class="fa fa-plus-square-o mr-2"></i>展开全部
+                    </button>
+                    <button id="mobile-collapse-all" class="bg-light-border dark:bg-dark-border hover:bg-light-border/70 dark:hover:bg-dark-cardHover text-light-text dark:text-dark-text rounded-lg py-3 flex items-center justify-center transition-all duration-300 text-sm touch-button">
+                        <i class="fa fa-minus-square-o mr-2"></i>收起全部
+                    </button>
+                    <button id="mobile-settings-btn" class="bg-warning hover:bg-warning/90 text-white rounded-lg py-3 flex items-center justify-center transition-all duration-300 text-sm touch-button col-span-2">
+                        <i class="fa fa-cog mr-2"></i>设置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 设置面板 -->
+    <div id="settings-panel" class="fixed top-0 right-0 h-full w-full md:w-80 bg-light-card dark:bg-dark-card shadow-xl transform translate-x-full transition-transform duration-300 z-50 p-6 overflow-y-auto scrollbar-thin">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-light-text dark:text-dark-text">设置</h2>
+            <button id="close-settings" class="text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 touch-button">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-6">
+            <!-- 每日计划设置 -->
+            <div>
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text">每日学习计划</h3>
+                <div class="flex items-center gap-3 mb-2">
+                    <label for="daily-goal" class="text-light-text dark:text-dark-text w-24">每日单词数:</label>
+                    <input type="number" id="daily-goal" min="1" max="100" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                </div>
+                <div class="flex items-center gap-3 mb-2">
+                    <label for="chunk-size" class="text-light-text dark:text-dark-text w-24">分块大小:</label>
+                    <input type="number" id="chunk-size" min="1" max="50" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                </div>
+                <div class="flex items-center gap-3 mb-2">
+                    <label for="today-chunk" class="text-light-text dark:text-dark-text w-24">今日学习块:</label>
+                    <select id="today-chunk" class="flex-1 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                        <option value="1">块 1</option>
+                    </select>
+                </div>
+                <div class="flex justify-between gap-2">
+                    <button id="regenerate-plan" class="flex-1 bg-secondary hover:bg-secondary/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                        <i class="fa fa-refresh mr-1"></i>重新生成计划
+                    </button>
+                    <button id="reset-today" class="flex-1 bg-warning hover:bg-warning/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                        <i class="fa fa-undo mr-1"></i>重置进度
+                    </button>
+                </div>
+                <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">设置您每天计划学习的单词数量和分块</p>
+            </div>
+
+            <!-- 导入单词区域 -->
+            <div>
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text">导入单词</h3>
+                <div class="border-2 border-dashed border-light-border dark:border-dark-border rounded-lg p-4 text-center hover:bg-light-border/30 dark:hover:bg-dark-border/30 transition-all duration-300 cursor-pointer">
+                    <input type="file" id="word-import" accept=".txt" class="hidden">
+                    <label for="word-import" class="cursor-pointer">
+                        <i class="fa fa-upload text-primary text-2xl mb-2"></i>
+                        <p class="text-light-text dark:text-dark-text">点击或拖拽TXT文件到此处导入</p>
+                        <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">文件名格式: 单元X.txt (例如: 单元3.txt)</p>
+                    </label>
+                </div>
+                <div id="import-status" class="mt-2 text-sm hidden"></div>
+            </div>
+            
+            <!-- 闪卡设置 -->
+            <div>
+                <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text">闪卡设置</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="flashcard-auto-flip" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
+                        <span class="ml-2 text-light-text dark:text-dark-text">自动翻卡 (3秒后显示答案)</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="flashcard-show-example" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
+                        <span class="ml-2 text-light-text dark:text-dark-text">显示真题例句</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="flashcard-show-memory" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300">
+                        <span class="ml-2 text-light-text dark:text-dark-text">显示记忆方法</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="flashcard-auto-pronounce" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
+                        <span class="ml-2 text-light-text dark:text-dark-text">显示单词时自动发音</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">外观设置</h3>
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="dark-mode" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300">
+                    <span class="ml-2 text-light-text dark:text-dark-text">启用暗黑模式</span>
+                </label>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">发音设置</h3>
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="auto-pronounce" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
+                    <span class="ml-2 text-light-text dark:text-dark-text">点击卡片时自动发音</span>
+                </label>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">闪卡模式设置</h3>
+                <div class="mb-2">
+                    <label class="flex items-center cursor-pointer mb-2">
+                        <input type="radio" name="review-mode" value="difficult" class="form-radio h-4 w-4 text-primary transition-all duration-300" checked>
+                        <span class="ml-2 text-light-text dark:text-dark-text">复习生词本</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer mb-2">
+                        <input type="radio" name="review-mode" value="daily" class="form-radio h-4 w-4 text-primary transition-all duration-300">
+                        <span class="ml-2 text-light-text dark:text-dark-text">复习今日词汇</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="review-mode" value="smart" class="form-radio h-4 w-4 text-primary transition-all duration-300">
+                        <span class="ml-2 text-light-text dark:text-dark-text">智能复习</span>
+                    </label>
+                </div>
+                <div id="smart-review-options" class="ml-6 mt-2 hidden">
+                    <label class="flex items-center cursor-pointer mb-2">
+                        <input type="checkbox" id="smart-include-difficult" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300" checked>
+                        <span class="ml-2 text-light-text dark:text-dark-text text-sm">包含生词本中的今日单词</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="smart-include-mastered" class="form-checkbox h-4 w-4 text-primary rounded transition-all duration-300">
+                        <span class="ml-2 text-light-text dark:text-dark-text text-sm">包含已掌握的今日单词</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">生词本设置</h3>
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="four-times-rule" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
+                    <span class="ml-2 text-light-text dark:text-dark-text">启用四次答对规则</span>
+                </label>
+                <p class="text-light-textLight dark:text-dark-textLight text-xs mt-1">单词需要连续答对四次才会从生词本移除</p>
+            </div>
+            
+            <div>
+                <h3 class="font-semibold mb-2 text-light-text dark:text-dark-text">卡片显示设置</h3>
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="show-basic-info" class="form-checkbox h-5 w-5 text-primary rounded transition-all duration-300" checked>
+                    <span class="ml-2 text-light-text dark:text-dark-text">折叠时显示音标、词性和基本释义</span>
+                </label>
+            </div>
+            
+            <div class="pt-4">
+                <button id="save-settings" class="w-full bg-primary hover:bg-primary/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-md hover:shadow-lg touch-button">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- 隐私政策面板 -->
+    <div id="privacy-policy-panel" class="fixed top-0 right-0 h-full w-full md:w-[600px] bg-light-card dark:bg-dark-card shadow-xl transform translate-x-full transition-transform duration-300 z-50 p-6 overflow-y-auto scrollbar-thin">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-light-text dark:text-dark-text">隐私政策</h2>
+            <button id="close-privacy-policy" class="text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 touch-button">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-4 text-light-text dark:text-dark-text text-sm leading-relaxed">
+            <h3 class="font-bold text-lg">词汇学习卡片隐私政策</h3>
+            <p class="text-light-textLight dark:text-dark-textLight">最后更新日期：2025年10月</p>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">1. 信息收集</h4>
+                <p>本应用尊重您的隐私，所有学习数据（包括单词掌握状态、学习进度、生词本等）均存储在您的设备本地，我们不会收集或上传任何个人学习数据到服务器。</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">2. 数据存储</h4>
+                <p>您的学习数据通过浏览器的本地存储(localStorage)功能保存在您的设备上。清除浏览器数据将导致学习记录丢失。</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">3. 发音功能</h4>
+                <p>单词发音功能通过有道词典API实现，使用时可能会向有道服务器发送单词查询请求，但不包含任何个人身份信息。</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">4. 联系信息</h4>
+                <p>如果您对隐私政策有任何疑问，请通过以下方式联系我们：</p>
+                <p class="mt-2">邮箱：dreamchaserr.q.cn@outlook.com</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户协议面板 -->
+    <div id="user-agreement-panel" class="fixed top-0 right-0 h-full w-full md:w-[600px] bg-light-card dark:bg-dark-card shadow-xl transform translate-x-full transition-transform duration-300 z-50 p-6 overflow-y-auto scrollbar-thin">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-light-text dark:text-dark-text">用户协议</h2>
+            <button id="close-user-agreement" class="text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 touch-button">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-4 text-light-text dark:text-dark-text text-sm leading-relaxed">
+            <h3 class="font-bold text-lg">词汇学习卡片用户协议</h3>
+            <p class="text-light-textLight dark:text-dark-textLight">最后更新日期：2025年10月</p>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">1. 服务说明</h4>
+                <p>词汇学习卡片是一款基于Web的单词学习工具，提供单词学习、复习、生词管理等功能。本服务免费提供，旨在帮助用户更有效地学习英语单词。</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">2. 用户责任</h4>
+                <p>用户需自行负责：</p>
+                <ul class="list-disc list-inside mt-2 ml-4">
+                    <li>妥善保管学习数据，定期备份重要信息</li>
+                    <li>确保导入的单词数据不侵犯第三方版权</li>
+                    <li>合法使用本应用，不用于任何违法用途</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">3. 免责声明</h4>
+                <p>本应用按"现状"提供，不提供任何明示或暗示的担保。对于因使用本应用而导致的任何数据丢失或学习中断，开发者不承担责任。</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">4. 服务变更</h4>
+                <p>我们保留随时修改、暂停或终止服务的权利，恕不另行通知。重要更新将通过应用内通知或版本更新说明告知用户。</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mt-4 mb-2">5. 联系与支持</h4>
+                <p>如有问题或建议，请通过以下方式联系我们：</p>
+                <p class="mt-2">邮箱：dreamchaserr.q.cn@outlook.com</p>
+            </div>
+        </div>
+    </div>   
+    <!-- 闪卡复习面板 -->
+    <div id="review-panel" class="fixed top-0 right-0 h-full w-full md:w-96 bg-light-card dark:bg-dark-card shadow-xl transform translate-x-full transition-transform duration-300 z-50 p-6 overflow-y-auto scrollbar-thin">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-light-text dark:text-dark-text">闪卡复习</h2>
+            <button id="close-review" class="text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 touch-button">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div id="review-stats" class="mb-6 p-4 bg-blue-50 dark:bg-primary/10 rounded-lg">
+            <div class="flex justify-between mb-2">
+                <div>
+                    <p class="text-light-textLight dark:text-dark-textLight text-sm">当前复习</p>
+                    <p class="text-xl font-bold text-primary" id="review-count">0</p>
+                </div>
+                <div>
+                    <p class="text-light-textLight dark:text-dark-textLight text-sm">生词本</p>
+                    <p class="text-xl font-bold text-danger" id="difficult-count">0</p>
+                </div>
+                <div>
+                    <p class="text-light-textLight dark:text-dark-textLight text-sm">今日进度</p>
+                    <p class="text-xl font-bold text-secondary" id="today-progress">0/0</p>
+                </div>
+            </div>
+            <div class="text-sm text-light-textLight dark:text-dark-textLight">
+                <span id="review-mode-text">模式: 生词本</span>
+                <span id="today-chunk-text" class="ml-2">块: 1</span>
+            </div>
+        </div>
+        
+        <div id="review-card-container" class="mb-6">
+            <!-- 闪卡将在这里显示 -->
+            <div id="review-card" class="flashcard bg-white dark:bg-dark-card rounded-xl shadow-card border border-light-border dark:border-dark-border">
+                <div class="flashcard-inner">
+                    <div class="flashcard-front bg-white dark:bg-dark-card p-6 rounded-xl">
+                        <div class="text-center py-8">
+                            <p class="text-light-textLight dark:text-dark-textLight" id="review-card-status">点击开始复习</p>
+                        </div>
+                    </div>
+                    <div class="flashcard-back bg-white dark:bg-dark-card p-6 rounded-xl">
+                        <div class="text-center py-8">
+                            <p class="text-light-textLight dark:text-dark-textLight">点击翻转卡片查看答案</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="review-actions" class="flex gap-3 hidden">
+            <button id="answer-correct" class="flex-1 bg-success hover:bg-success/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-sm hover:shadow touch-button">
+                <i class="fa fa-check mr-1"></i>认识
+            </button>
+            <button id="answer-incorrect" class="flex-1 bg-danger hover:bg-danger/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-sm hover:shadow touch-button">
+                <i class="fa fa-times mr-1"></i>不认识
+            </button>
+            <button id="flip-card" class="flex-1 bg-primary hover:bg-primary/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-sm hover:shadow touch-button">
+                <i class="fa fa-retweet mr-1"></i>翻转
+            </button>
+        </div>
+        
+        <div class="flex gap-3 mt-4">
+            <button id="start-review" class="flex-1 bg-primary hover:bg-primary/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-md hover:shadow-lg touch-button">
+                开始复习
+            </button>
+            <button id="pause-review" class="flex-1 bg-warning hover:bg-warning/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-md hover:shadow-lg touch-button hidden">
+                暂停复习
+            </button>
+        </div>
+    </div>
+    
+    <!-- 生词本面板 -->
+    <div id="difficult-words-panel" class="fixed top-0 right-0 h-full w-full md:w-[500px] bg-light-card dark:bg-dark-card shadow-xl transform translate-x-full transition-transform duration-300 z-50 overflow-hidden">
+    <div class="flex flex-col h-full">
+        <!-- 头部 -->
+        <div class="flex justify-between items-center p-6 border-b border-light-border dark:border-dark-border">
+        <div>
+            <h2 class="text-xl font-bold text-light-text dark:text-dark-text">生词本</h2>
+            <p class="text-light-textLight dark:text-dark-textLight text-sm mt-1" id="difficult-words-count">0个生词</p>
+        </div>
+        <button id="close-difficult" class="text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 touch-button">
+            <i class="fa fa-times text-xl"></i>
+        </button>
+        </div>
+        
+        <!-- 生词列表 -->
+        <div id="difficult-words-list" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- 生词卡片将通过JavaScript动态生成 -->
+        </div>
+    </div>
+    </div>
+    
+    <!-- 提示对话框 -->
+    <div id="confirm-dialog" class="fixed inset-0 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/50" id="dialog-overlay"></div>
+        <div class="relative bg-light-card dark:bg-dark-card rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95">
+            <h3 class="text-lg font-bold text-light-text dark:text-dark-text mb-3" id="dialog-title">确认操作</h3>
+            <p class="text-light-text dark:text-dark-text mb-5" id="dialog-message">确认要执行此操作吗？</p>
+            <div class="flex gap-3">
+                <button id="dialog-cancel" class="flex-1 bg-light-border dark:bg-dark-border hover:bg-light-border/70 dark:hover:bg-dark-cardHover text-light-text dark:text-dark-text rounded-lg py-2 transition-all duration-300 touch-button">
+                    取消
+                </button>
+                <button id="dialog-confirm" class="flex-1 bg-primary hover:bg-primary/90 text-white rounded-lg py-2 transition-all duration-300 touch-button">
+                    确认
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 遮罩层 -->
+    <div id="overlay" class="fixed inset-0 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
+    
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 统计信息区域 -->
+        <div class="stats-panel bg-light-card dark:bg-dark-card rounded-xl shadow-card mb-6 transition-all duration-300 hover:shadow-card-hover">
+            <div class="stats-grid">
+                <div class="stats-item">
+                    <div class="stats-value text-primary" id="total-count">4</div>
+                    <div class="stats-label">总单词数</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-value text-success" id="mastered-count">0</div>
+                    <div class="stats-label">已掌握</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-value text-secondary" id="daily-progress">0/10</div>
+                    <div class="stats-label">今日进度</div>
+                    <div class="progress-bar mt-1">
+                        <div class="progress-value" id="daily-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-value text-warning" id="chunk-progress">1/1</div>
+                    <div class="stats-label">当前块</div>
+                </div>
+            </div>
+            <div class="mt-3 text-center text-light-textLight dark:text-dark-textLight text-sm">
+                <span class="font-semibold text-light-text dark:text-dark-text">当前单元：</span>
+                <span id="current-unit-text">单元 1</span>
+                <span class="ml-2" id="chunk-info">(块 1/1)</span>
+                <span class="ml-2 text-secondary" id="today-chunk-indicator"></span>
+            </div>
+        </div>
+        
+        <!-- 单词卡片列表 -->
+        <div class="grid grid-cols-1 gap-4 md:gap-5" id="vocabulary-cards">
+            <!-- 卡片将通过JavaScript动态生成 -->
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <!-- 页脚 -->
+    <footer class="bg-light-card dark:bg-dark-card py-6 mt-8 transition-colors duration-300 border-t border-light-border dark:border-dark-border">
+        <div class="container mx-auto px-4">
+            <div class="text-center">
+                <!-- 主要版权和版本信息 -->
+                <p class="text-light-text dark:text-dark-text text-sm font-medium mb-3">
+                    词汇学习卡片 © 2025 MR.XJQ 版权所有 | v 5.1.0
+                </p>
+                
+                <!-- 联系方式和链接 -->
+                <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-4">
+                    <a href="mailto:dreamchaserr.q.cn@outlook.com" 
+                    class="text-light-textLight dark:text-dark-textLight hover:text-primary transition-colors duration-300 text-sm flex items-center">
+                        <i class="fa fa-envelope mr-2"></i>dreamchaserr.q.cn@outlook.com
+                    </a>
+                    <button id="privacy-policy-btn" 
+                            class="text-light-textLight dark:text-dark-textLight hover:text-primary transition-colors duration-300 text-sm">
+                        隐私政策
+                    </button>
+                    <button id="user-agreement-btn" 
+                            class="text-light-textLight dark:text-dark-textLight hover:text-primary transition-colors duration-300 text-sm">
+                        用户协议
+                    </button>
+                </div>
+                
+                <!-- 技术信息 -->
+                <div class="text-light-textLight dark:text-dark-textLight text-xs">
+                    <p>本网站使用Tailwind CSS和Font Awesome构建 | 发音功能由有道词典API提供支持</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // 应用状态管理
+        const appState = {
+            units: { 1: [] },
+            currentUnit: 1,
+            currentChunk: 1,
+            chunkSize: 10,
+            totalChunks: {},
+            settings: {
+                autoPronounce: true,
+                showBasicInfo: true,
+                darkMode: false,
+                dailyGoal: 10,
+                reviewMode: 'difficult',
+                chunkSize: 10,
+                currentChunk: 1,
+                todayChunk: 1,
+                fourTimesRule: true,
+                smartIncludeDifficult: true,
+                smartIncludeMastered: false,
+                // 新增闪卡设置
+                flashcardAutoFlip: true,
+                flashcardShowExample: true,
+                flashcardShowMemory: false,
+                flashcardAutoPronounce: true
+            },
+            masteredWords: {},
+            studyProgress: {},
+            difficultWords: {},
+            correctCounts: {},
+            todayWords: [],
+            todayChunkWords: [],
+            reviewState: {
+                inProgress: false,
+                currentWord: null,
+                remainingWords: [],
+                mode: 'difficult',
+                autoFlipTimer: null
+            }
+        };
+      
+        // 全局音频对象，用于管理发音
+        let audioPlayer = null;
+        
+        // 初始单词数据
+        const initialRawVocabularyData = `【单词】modest
+【音标】/ˈmɑːdɪst/
+【词性】adj.
+【中文释义】适中的;谦虚的;保守的;端庄的
+【真题】In Lagos, foreign oil workers can pay as much as $65,000 per year in rent for a modest apartment in a safe part of town. (2017)
+【记忆方法】mod 模式,把 est 想成形容词最高级,连在一起就是:最好的模式。在一些人眼中,做人最好的模式是什么?低调啊,所以该单词是"谦虚的,低调的"之意。
+
+【单词】earnest
+【音标】/ˈɜːnɪst/
+【词性】adj.
+【中文释义】认真的,诚挚的
+【记忆方法】earn 挣钱,把 est 想成形容词最高级,连到一起就是:挣钱最好的模式,就是"认真的"。
+
+【单词】moderate
+【音标】/ˈmɒdəreɪt,ˈmɒdərət/
+【词性】v. & adj.
+【中文释义】v. 缓和;使适中 adj. 适度的;中等的;温和的
+【真题】One can get promoted due to his excellent performance, and moderate challenges can increase one's progress. (2016)
+【记忆方法】mode 想成"模特";rate 是"速度";模特走路是什么速度?不快不慢的啊,所以该单词的意思是"适度的"。
+
+【单词】tolerate
+【音标】/ˈtɒləreɪt/
+【词性】v.
+【中文释义】允许;忍受;容许
+【真题】They have to tolerate the bad tempers of colleagues.
+【记忆方法】tole 发音类似"逃了";rate 速度;连在一起就是:以很快的速度逃跑了。为什么?忍受到了极点,受不了了一忍受。
+【派生】tolerant /ˈtɒlərənt/ adj. 容忍的,宽容的
+tolerance /ˈtɒlərəns/ n. 宽容`;
+        
+        // DOM元素
+        const elements = {
+            // 主要容器
+            vocabularyCardsContainer: document.getElementById('vocabulary-cards'),
+            
+            // 桌面端按钮
+            expandAllBtn: document.getElementById('expand-all'),
+            collapseAllBtn: document.getElementById('collapse-all'),
+            settingsBtn: document.getElementById('settings-btn'),
+            reviewBtn: document.getElementById('review-btn'),
+            difficultBtn: document.getElementById('difficult-btn'),
+            
+            // 移动端按钮
+            mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+            mobileNavMenu: document.getElementById('mobile-nav-menu'),
+            mobileExpandAllBtn: document.getElementById('mobile-expand-all'),
+            mobileCollapseAllBtn: document.getElementById('mobile-collapse-all'),
+            mobileReviewBtn: document.getElementById('mobile-review-btn'),
+            mobileDifficultBtn: document.getElementById('mobile-difficult-btn'),
+            mobileSettingsBtn: document.getElementById('mobile-settings-btn'),
+            mobileUnitSelector: document.getElementById('mobile-unit-selector'),
+            mobileChunkSelector: document.getElementById('mobile-chunk-selector'),
+            
+            // 选择器
+            unitSelector: document.getElementById('unit-selector'),
+            chunkSelector: document.getElementById('chunk-selector'),
+            
+            // 面板
+            settingsPanel: document.getElementById('settings-panel'),
+            closeSettingsBtn: document.getElementById('close-settings'),
+            reviewPanel: document.getElementById('review-panel'),
+            closeReviewBtn: document.getElementById('close-review'),
+            difficultWordsPanel: document.getElementById('difficult-words-panel'),
+            closeDifficultBtn: document.getElementById('close-difficult'),
+            
+            // 复习相关
+            startReviewBtn: document.getElementById('start-review'),
+            pauseReviewBtn: document.getElementById('pause-review'),
+            reviewCard: document.getElementById('review-card'),
+            reviewActions: document.getElementById('review-actions'),
+            answerCorrectBtn: document.getElementById('answer-correct'),
+            answerIncorrectBtn: document.getElementById('answer-incorrect'),
+            flipCardBtn: document.getElementById('flip-card'),
+            reviewCount: document.getElementById('review-count'),
+            difficultCount: document.getElementById('difficult-count'),
+            todayProgress: document.getElementById('today-progress'),
+            
+            // 生词本
+            difficultWordsList: document.getElementById('difficult-words-list'),
+            
+            // 对话框
+            confirmDialog: document.getElementById('confirm-dialog'),
+            dialogOverlay: document.getElementById('dialog-overlay'),
+            dialogTitle: document.getElementById('dialog-title'),
+            dialogMessage: document.getElementById('dialog-message'),
+            dialogConfirmBtn: document.getElementById('dialog-confirm'),
+            dialogCancelBtn: document.getElementById('dialog-cancel'),
+            overlay: document.getElementById('overlay'),
+            
+            // 设置相关
+            saveSettingsBtn: document.getElementById('save-settings'),
+            autoPronounceCheckbox: document.getElementById('auto-pronounce'),
+            showBasicInfoCheckbox: document.getElementById('show-basic-info'),
+            darkModeCheckbox: document.getElementById('dark-mode'),
+            fourTimesRuleCheckbox: document.getElementById('four-times-rule'),
+            dailyGoalInput: document.getElementById('daily-goal'),
+            chunkSizeInput: document.getElementById('chunk-size'),
+            todayChunkSelector: document.getElementById('today-chunk'),
+            regeneratePlanBtn: document.getElementById('regenerate-plan'),
+            resetTodayBtn: document.getElementById('reset-today'),
+            
+            // 闪卡设置
+            flashcardAutoFlip: document.getElementById('flashcard-auto-flip'),
+            flashcardShowExample: document.getElementById('flashcard-show-example'),
+            flashcardShowMemory: document.getElementById('flashcard-show-memory'),
+            flashcardAutoPronounce: document.getElementById('flashcard-auto-pronounce'),
+
+            // 其他
+            currentUnitText: document.getElementById('current-unit-text'),
+            chunkInfo: document.getElementById('chunk-info'),
+            todayChunkIndicator: document.getElementById('today-chunk-indicator'),
+            totalCount: document.getElementById('total-count'),
+            masteredCount: document.getElementById('mastered-count'),
+            dailyProgress: document.getElementById('daily-progress'),
+            dailyProgressBar: document.getElementById('daily-progress-bar'),
+            chunkProgress: document.getElementById('chunk-progress'),
+            wordImport: document.getElementById('word-import'),
+            importStatus: document.getElementById('import-status'),
+            reviewCardStatus: document.getElementById('review-card-status'),
+            difficultWordsCount: document.getElementById('difficult-words-count'),
+            reviewModeText: document.getElementById('review-mode-text'),
+            todayChunkText: document.getElementById('today-chunk-text'),
+            smartReviewOptions: document.getElementById('smart-review-options'),
+            // 在elements对象中添加
+            privacyPolicyPanel: document.getElementById('privacy-policy-panel'),
+            userAgreementPanel: document.getElementById('user-agreement-panel'),
+            closePrivacyPolicy: document.getElementById('close-privacy-policy'),
+            closeUserAgreement: document.getElementById('close-user-agreement'),
+            smartIncludeDifficult: document.getElementById('smart-include-difficult'),
+            // 添加这些到elements对象中
+            desktopMenuToggle: document.getElementById('desktop-menu-toggle'),
+            desktopNavMenu: document.getElementById('desktop-nav-menu'),
+            smartIncludeMastered: document.getElementById('smart-include-mastered')
+        };
+        
+        // 获取今天的日期字符串（YYYY-MM-DD）
+        function getTodayString() {
+            const date = new Date();
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+        
+        // 获取日期显示格式
+        function getDateDisplayString() {
+            const date = new Date();
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+        
+        // 检查日期变化
+        function checkDateChange() {
+            const today = getTodayString();
+            const lastDate = localStorage.getItem('lastStudyDate');
+            
+            if (lastDate !== today) {
+                generateDailyPlan();
+                localStorage.setItem('lastStudyDate', today);
+            }
+        }
+        
+        // 生成每日学习计划
+        function generateDailyPlan() {
+            const today = getTodayString();
+            appState.studyProgress[today] = appState.studyProgress[today] || {};
+            
+            const targetChunk = appState.settings.todayChunk || appState.currentChunk;
+            const chunkWords = getChunkWords(appState.currentUnit, targetChunk);
+            const dailyGoal = appState.settings.dailyGoal;
+            
+            const availableWords = chunkWords.filter(wordData => {
+                const key = `${appState.currentUnit}-${wordData.word}`;
+                return !appState.masteredWords[key];
+            });
+            
+            appState.todayWords = availableWords.slice(0, Math.min(dailyGoal, availableWords.length));
+            appState.todayChunkWords = chunkWords;
+            
+            updateTodayProgress();
+            showToast(`${getDateDisplayString()} 计划：学习块 ${targetChunk} 的前 ${dailyGoal} 个单词`, 'info');
+        }
+        
+        // 获取指定单元的指定块的单词
+        function getChunkWords(unit, chunk) {
+            const unitWords = appState.units[unit] || [];
+            const chunkSize = appState.settings.chunkSize;
+            const startIndex = (chunk - 1) * chunkSize;
+            const endIndex = Math.min(startIndex + chunkSize, unitWords.length);
+            
+            return unitWords.slice(startIndex, endIndex);
+        }
+        
+        function updateTodayProgress() {
+            const today = getTodayString();
+            const studiedToday = appState.studyProgress[today] && appState.studyProgress[today][appState.currentUnit] || 0;
+            const dailyGoal = appState.settings.dailyGoal;
+            
+            // 更新主页统计
+            elements.dailyProgress.textContent = `${studiedToday}/${dailyGoal}`;
+            elements.dailyProgressBar.style.width = `${Math.min((studiedToday / dailyGoal) * 100, 100)}%`;
+            
+            // 更新复习面板统计
+            elements.todayProgress.textContent = `${studiedToday}/${dailyGoal}`;
+            elements.todayChunkIndicator.textContent = `${getDateDisplayString()} 学习: 块 ${appState.settings.todayChunk || appState.currentChunk}`;
+            elements.todayChunkText.textContent = `块: ${appState.settings.todayChunk || appState.currentChunk}`;
+        }
+        
+        // 更新今日学习块选择器
+        function updateTodayChunkSelector() {
+            const currentUnit = appState.currentUnit;
+            const totalChunks = appState.totalChunks[currentUnit] || 1;
+            
+            elements.todayChunkSelector.innerHTML = '';
+            
+            for (let i = 1; i <= totalChunks; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `块 ${i}`;
+                if (i === (appState.settings.todayChunk || 1)) {
+                    option.selected = true;
+                }
+                elements.todayChunkSelector.appendChild(option);
+            }
+        }
+        
+        // Toast提示功能
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colors = {
+                info: 'bg-blue-500',
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500'
+            };
+            
+            toast.className = `fixed bottom-4 right-4 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 opacity-0 transform translate-y-4 ${colors[type]} z-50`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-4');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 解析单词数据
+        function parseVocabularyData(rawData) {
+            const wordBlocks = rawData.split('\n\n').filter(block => block.trim() !== '');
+            
+            const result = wordBlocks.map(block => {
+                const lines = block.split('\n').filter(line => line.trim() !== '');
+                const wordData = {};
+                
+                lines.forEach(line => {
+                    const match = line.match(/【(.*?)】(.*)/);
+                    if (match && match.length === 3) {
+                        const tag = match[1].trim();
+                        const content = match[2].trim();
+                        
+                        switch(tag) {
+                            case '单词':
+                                wordData.word = content;
+                                break;
+                            case '音标':
+                                wordData.phonetic = content;
+                                break;
+                            case '词性':
+                                wordData.partOfSpeech = content;
+                                break;
+                            case '中文释义':
+                                wordData.definition = content;
+                                break;
+                            case '真题':
+                                wordData.example = content;
+                                break;
+                            case '记忆方法':
+                                wordData.memory = content;
+                                break;
+                            case '派生':
+                                wordData.derivative = content;
+                                break;
+                            default:
+                                if (!wordData.extra) wordData.extra = {};
+                                wordData.extra[tag] = content;
+                        }
+                    } else if (line.trim() && !line.startsWith('【')) {
+                        if (wordData.memory && !wordData.memory.endsWith(line.trim())) {
+                            wordData.memory += ' ' + line.trim();
+                        } else if (wordData.example && !wordData.example.endsWith(line.trim())) {
+                            wordData.example += ' ' + line.trim();
+                        } else if (wordData.derivative && !wordData.derivative.endsWith(line.trim())) {
+                            wordData.derivative += ' ' + line.trim();
+                        }
+                    }
+                });
+                
+                if (!wordData.word) {
+                    console.warn('发现没有单词名的单词块，已跳过');
+                    return null;
+                }
+                
+                return wordData;
+            });
+            
+            return result.filter(word => word !== null);
+        }
+        
+        // 从文件名提取单元号
+        function getUnitFromFilename(filename) {
+            const match = filename.match(/单元(\d+)\.txt$/i);
+            return match && match[1] ? parseInt(match[1], 10) : 1;
+        }
+        
+        // 添加新单元到选择器
+        function addUnitToSelector(unitNumber) {
+            const existingOption = Array.from(elements.unitSelector.options).find(
+                option => option.value === unitNumber.toString()
+            );
+            
+            if (!existingOption) {
+                const option = document.createElement('option');
+                option.value = unitNumber;
+                option.textContent = `单元 ${unitNumber}`;
+                elements.unitSelector.appendChild(option);
+                
+                // 同时更新移动端选择器
+                const mobileOption = document.createElement('option');
+                mobileOption.value = unitNumber;
+                mobileOption.textContent = `单元 ${unitNumber}`;
+                elements.mobileUnitSelector.appendChild(mobileOption);
+            }
+        }
+        
+        // 更新分块选择器
+        function updateChunkSelector() {
+            const currentUnit = appState.currentUnit;
+            const totalChunks = appState.totalChunks[currentUnit] || 1;
+            
+            // 更新桌面端选择器
+            elements.chunkSelector.innerHTML = '';
+            for (let i = 1; i <= totalChunks; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `块 ${i}`;
+                if (i === appState.currentChunk) {
+                    option.selected = true;
+                }
+                elements.chunkSelector.appendChild(option);
+            }
+            
+            // 更新移动端选择器
+            elements.mobileChunkSelector.innerHTML = '';
+            for (let i = 1; i <= totalChunks; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `块 ${i}`;
+                if (i === appState.currentChunk) {
+                    option.selected = true;
+                }
+                elements.mobileChunkSelector.appendChild(option);
+            }
+        }
+        
+        // 计算分块
+        function calculateChunks(unitWords) {
+            const chunkSize = appState.settings.chunkSize;
+            const totalChunks = Math.ceil(unitWords.length / chunkSize);
+            appState.totalChunks[appState.currentUnit] = totalChunks;
+            updateChunkSelector();
+            updateTodayChunkSelector();
+            updateChunkInfo();
+        }
+        
+        // 更新分块信息显示
+        function updateChunkInfo() {
+            const currentUnit = appState.currentUnit;
+            const totalChunks = appState.totalChunks[currentUnit] || 1;
+            elements.chunkInfo.textContent = `(块 ${appState.currentChunk}/${totalChunks})`;
+            elements.chunkProgress.textContent = `${appState.currentChunk}/${totalChunks}`;
+        }
+        
+        // 获取当前分块的单词
+        function getCurrentChunkWords() {
+            const unitWords = appState.units[appState.currentUnit] || [];
+            const chunkSize = appState.settings.chunkSize;
+            const startIndex = (appState.currentChunk - 1) * chunkSize;
+            const endIndex = Math.min(startIndex + chunkSize, unitWords.length);
+            
+            return unitWords.slice(startIndex, endIndex);
+        }
+        
+        // 渲染单词卡片
+        function renderVocabularyCards() {
+            const chunkWords = getCurrentChunkWords();
+            
+            elements.totalCount.textContent = chunkWords.length;
+            elements.vocabularyCardsContainer.innerHTML = '';
+            
+            if (chunkWords.length === 0) {
+                elements.vocabularyCardsContainer.innerHTML = `
+                    <div class="bg-light-card dark:bg-dark-card rounded-xl p-8 text-center shadow-card transition-all duration-300">
+                        <i class="fa fa-book text-4xl text-light-textLight dark:text-dark-textLight mb-3"></i>
+                        <h3 class="text-lg font-medium text-light-text dark:text-dark-text mb-2">暂无单词</h3>
+                        <p class="text-light-textLight dark:text-dark-textLight">请导入单词数据或切换到其他单元</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            chunkWords.forEach(wordData => {
+                const wordKey = `${appState.currentUnit}-${wordData.word}`;
+                const isMastered = appState.masteredWords[wordKey];
+                const isDifficult = appState.difficultWords[wordKey];
+                const isTodayWord = appState.todayWords.some(w => w.word === wordData.word);
+                const correctCount = appState.correctCounts[wordKey] || 0;
+                
+                const card = document.createElement('div');
+                card.className = `bg-light-card dark:bg-dark-card rounded-xl shadow-card card-transition hover:shadow-card-hover border border-light-border dark:border-dark-border overflow-hidden ${isMastered ? 'opacity-70' : ''}`;
+                card.dataset.word = wordData.word;
+                
+                const showBasicInfo = appState.settings.showBasicInfo;
+                
+                card.innerHTML = `
+                    <div class="p-4 md:p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex-1">
+                                <div class="flex items-center">
+                                    <h3 class="text-lg md:text-xl font-bold text-light-text dark:text-dark-text mr-2">${wordData.word}</h3>
+                                    ${isTodayWord ? `<span class="date-badge">${getDateDisplayString()}</span>` : ''}
+                                    ${isDifficult ? '<i class="fa fa-bookmark text-danger ml-1"></i>' : ''}
+                                </div>
+                                ${showBasicInfo ? `
+                                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                                        <span class="text-light-textLight dark:text-dark-textLight text-sm">${wordData.phonetic || ''}</span>
+                                        <span class="text-light-textLight dark:text-dark-textLight text-sm">${wordData.partOfSpeech || ''}</span>
+                                        <span class="text-light-textLight dark:text-dark-textLight text-sm">${wordData.definition || ''}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="pronounce-btn text-primary hover:text-primary/80 transition-colors duration-300 p-2 rounded-full hover:bg-light-border/30 dark:hover:bg-dark-border/30 touch-button" title="发音">
+                                    <i class="fa fa-volume-up"></i>
+                                </button>
+                                <button class="toggle-card-btn text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 p-2 rounded-full hover:bg-light-border/30 dark:hover:bg-dark-border/30 touch-button" title="展开/收起">
+                                    <i class="fa fa-chevron-down rotate-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card-expand-content">
+                            <div class="space-y-4 pt-2 border-t border-light-border dark:border-dark-border">
+                                ${wordData.definition ? `
+                                    <div>
+                                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-1">释义</h4>
+                                        <p class="text-light-text dark:text-dark-text">${wordData.definition}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                ${wordData.example ? `
+                                    <div>
+                                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-1">真题例句</h4>
+                                        <p class="text-light-text dark:text-dark-text italic">${wordData.example}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                ${wordData.memory ? `
+                                    <div>
+                                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-1">记忆方法</h4>
+                                        <p class="text-light-text dark:text-dark-text">${wordData.memory}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                ${wordData.derivative ? `
+                                    <div>
+                                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-1">派生词</h4>
+                                        <p class="text-light-text dark:text-dark-text">${wordData.derivative}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                ${wordData.extra ? Object.entries(wordData.extra).map(([key, value]) => `
+                                    <div>
+                                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-1">${key}</h4>
+                                        <p class="text-light-text dark:text-dark-text">${value}</p>
+                                    </div>
+                                `).join('') : ''}
+                                
+                                <div class="flex justify-between items-center pt-2">
+                                    <div class="flex items-center gap-2">
+                                        ${isDifficult ? `
+                                            <span class="text-xs bg-danger/10 text-danger px-2 py-1 rounded">生词 (答对: ${correctCount}/4)</span>
+                                        ` : ''}
+                                    </div>
+                                    <div class="flex gap-2">
+                                        ${!isMastered ? `
+                                            <button class="master-btn text-xs bg-success hover:bg-success/90 text-white rounded px-3 py-1 transition-all duration-300 touch-button">
+                                                标记为已掌握
+                                            </button>
+                                        ` : `
+                                            <button class="unmaster-btn text-xs bg-warning hover:bg-warning/90 text-white rounded px-3 py-1 transition-all duration-300 touch-button">
+                                                取消掌握
+                                            </button>
+                                        `}
+                                        ${!isDifficult ? `
+                                            <button class="difficult-btn text-xs bg-danger hover:bg-danger/90 text-white rounded px-3 py-1 transition-all duration-300 touch-button">
+                                                加入生词本
+                                            </button>
+                                        ` : `
+                                            <button class="remove-difficult-btn text-xs bg-light-border dark:bg-dark-border hover:bg-light-border/70 dark:hover:bg-dark-cardHover text-light-text dark:text-dark-text rounded px-3 py-1 transition-all duration-300 touch-button">
+                                                移出生词本
+                                            </button>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                elements.vocabularyCardsContainer.appendChild(card);
+            });
+            
+            attachCardEvents();
+        }
+        
+        // 为卡片添加交互事件
+        function attachCardEvents() {
+            // 发音按钮
+            document.querySelectorAll('.pronounce-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const card = this.closest('[data-word]');
+                    const word = card.dataset.word;
+                    pronounceWord(word);
+                });
+            });
+            
+            // 展开/收起卡片
+            document.querySelectorAll('.toggle-card-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const card = this.closest('.bg-light-card, .bg-dark-card');
+                    const icon = this.querySelector('.fa-chevron-down');
+                    
+                    card.classList.toggle('card-expanded');
+                    icon.classList.toggle('open');
+                    
+                    if (card.classList.contains('card-expanded') && appState.settings.autoPronounce) {
+                        const word = card.dataset.word;
+                        pronounceWord(word);
+                    }
+                });
+            });
+            
+            // 标记为已掌握按钮
+            document.querySelectorAll('.master-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const card = this.closest('[data-word]');
+                    const word = card.dataset.word;
+                    markWordAsMastered(word);
+                });
+            });
+            
+            // 取消掌握按钮
+            document.querySelectorAll('.unmaster-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const card = this.closest('[data-word]');
+                    const word = card.dataset.word;
+                    unmarkWordAsMastered(word);
+                });
+            });
+            
+            // 加入生词本按钮
+            document.querySelectorAll('.difficult-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const card = this.closest('[data-word]');
+                    const word = card.dataset.word;
+                    addToDifficultWords(word);
+                });
+            });
+            
+            // 移出生词本按钮
+            document.querySelectorAll('.remove-difficult-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const card = this.closest('[data-word]');
+                    const word = card.dataset.word;
+                    removeFromDifficultWords(word);
+                });
+            });
+        }
+        
+        // 使用有道API发音
+        function pronounceWord(word) {
+            if (audioPlayer) {
+                audioPlayer.pause();
+            }
+            
+            const audioUrl = `https://dict.youdao.com/dictvoice?type=0&audio=${encodeURIComponent(word)}`;
+            audioPlayer = new Audio(audioUrl);
+            audioPlayer.play().catch(e => {
+                console.warn('发音失败:', e);
+                showToast('发音失败，请检查网络连接', 'error');
+            });
+        }
+        
+        function markWordAsMastered(word) {
+            const wordKey = `${appState.currentUnit}-${word}`;
+            appState.masteredWords[wordKey] = true;
+            
+            // 新增：更新今日进度
+            const today = getTodayString();
+            if (!appState.studyProgress[today]) {
+                appState.studyProgress[today] = {};
+            }
+            if (!appState.studyProgress[today][appState.currentUnit]) {
+                appState.studyProgress[today][appState.currentUnit] = 0;
+            }
+            // 确保不超过每日目标
+            appState.studyProgress[today][appState.currentUnit] = 
+                Math.min(appState.studyProgress[today][appState.currentUnit] + 1, appState.settings.dailyGoal);
+            
+            if (appState.difficultWords[wordKey]) {
+                appState.correctCounts[wordKey] = (appState.correctCounts[wordKey] || 0) + 1;
+                
+                if (appState.settings.fourTimesRule && appState.correctCounts[wordKey] >= 4) {
+                    delete appState.difficultWords[wordKey];
+                    showToast(`"${word}" 已连续答对4次，已从生词本中移除`, 'success');
+                }
+            }
+            
+            saveAppState();
+            renderVocabularyCards();
+            updateStats();
+            updateTodayProgress(); // 确保更新显示
+            showToast(`"${word}" 已标记为已掌握`, 'success');
+        }
+        
+        // 取消标记单词为已掌握
+        function unmarkWordAsMastered(word) {
+            const wordKey = `${appState.currentUnit}-${word}`;
+            delete appState.masteredWords[wordKey];
+            
+            saveAppState();
+            renderVocabularyCards();
+            updateStats();
+            showToast(`"${word}" 已取消掌握标记`, 'info');
+        }
+        
+        // 添加单词到生词本
+        function addToDifficultWords(word) {
+            const wordKey = `${appState.currentUnit}-${word}`;
+            appState.difficultWords[wordKey] = true;
+            appState.correctCounts[wordKey] = 0;
+            
+            saveAppState();
+            renderVocabularyCards();
+            updateStats();
+            showToast(`"${word}" 已添加到生词本`, 'info');
+        }
+        
+        // 从生词本中移除单词
+        function removeFromDifficultWords(word) {
+            const wordKey = `${appState.currentUnit}-${word}`;
+            delete appState.difficultWords[wordKey];
+            delete appState.correctCounts[wordKey];
+            
+            saveAppState();
+            renderVocabularyCards();
+            updateStats();
+            showToast(`"${word}" 已从生词本中移除`, 'info');
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            const chunkWords = getCurrentChunkWords();
+            const masteredCount = chunkWords.filter(wordData => {
+                const wordKey = `${appState.currentUnit}-${wordData.word}`;
+                return appState.masteredWords[wordKey];
+            }).length;
+            
+            elements.masteredCount.textContent = masteredCount;
+            
+            const difficultCount = Object.keys(appState.difficultWords).length;
+            elements.difficultCount.textContent = difficultCount;
+            
+            // 确保今日进度被更新
+            updateTodayProgress();
+            
+            // 更新复习统计
+            updateReviewStats();
+        }
+        
+        // 保存应用状态到localStorage
+        function saveAppState() {
+            localStorage.setItem('vocabularyAppState', JSON.stringify({
+                units: appState.units,
+                settings: appState.settings,
+                masteredWords: appState.masteredWords,
+                studyProgress: appState.studyProgress,
+                difficultWords: appState.difficultWords,
+                correctCounts: appState.correctCounts,
+                todayWords: appState.todayWords,
+                todayChunkWords: appState.todayChunkWords,
+                totalChunks: appState.totalChunks,
+                currentUnit: appState.currentUnit,
+                currentChunk: appState.currentChunk
+            }));
+        }
+        
+        // 从localStorage加载应用状态
+        function loadAppState() {
+            const savedState = localStorage.getItem('vocabularyAppState');
+            if (savedState) {
+                const parsedState = JSON.parse(savedState);
+                
+                Object.assign(appState, {
+                    ...appState,
+                    ...parsedState,
+                    units: parsedState.units || appState.units,
+                    settings: { ...appState.settings, ...parsedState.settings },
+                    masteredWords: parsedState.masteredWords || appState.masteredWords,
+                    studyProgress: parsedState.studyProgress || appState.studyProgress,
+                    difficultWords: parsedState.difficultWords || appState.difficultWords,
+                    correctCounts: parsedState.correctCounts || appState.correctCounts,
+                    todayWords: parsedState.todayWords || appState.todayWords,
+                    todayChunkWords: parsedState.todayChunkWords || appState.todayChunkWords,
+                    totalChunks: parsedState.totalChunks || appState.totalChunks,
+                    currentUnit: parsedState.currentUnit || appState.currentUnit,
+                    currentChunk: parsedState.currentChunk || appState.currentChunk
+                });
+            }
+            
+            checkDateChange();
+            updateSettingsUI();
+            updateUnitSelector();
+            updateChunkSelector();
+            updateTodayChunkSelector();
+            updateChunkInfo();
+            renderVocabularyCards();
+            updateStats();
+            updateReviewStats();
+        }
+       
+        // 更新设置UI
+        function updateSettingsUI() {
+            elements.autoPronounceCheckbox.checked = appState.settings.autoPronounce;
+            elements.showBasicInfoCheckbox.checked = appState.settings.showBasicInfo;
+            elements.darkModeCheckbox.checked = appState.settings.darkMode;
+            elements.fourTimesRuleCheckbox.checked = appState.settings.fourTimesRule;
+            elements.dailyGoalInput.value = appState.settings.dailyGoal;
+            elements.chunkSizeInput.value = appState.settings.chunkSize;
+            elements.smartIncludeDifficult.checked = appState.settings.smartIncludeDifficult;
+            elements.smartIncludeMastered.checked = appState.settings.smartIncludeMastered;
+            
+            // 闪卡设置
+            elements.flashcardAutoFlip.checked = appState.settings.flashcardAutoFlip;
+            elements.flashcardShowExample.checked = appState.settings.flashcardShowExample;
+            elements.flashcardShowMemory.checked = appState.settings.flashcardShowMemory;
+            elements.flashcardAutoPronounce.checked = appState.settings.flashcardAutoPronounce;
+            
+            // 设置复习模式单选按钮
+            const reviewModeRadios = document.querySelectorAll('input[name="review-mode"]');
+            reviewModeRadios.forEach(radio => {
+                if (radio.value === appState.settings.reviewMode) {
+                    radio.checked = true;
+                }
+            });
+            
+            toggleSmartReviewOptions();
+            
+            if (appState.settings.darkMode) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        
+        // 切换智能复习选项显示
+        function toggleSmartReviewOptions() {
+            if (appState.settings.reviewMode === 'smart') {
+                elements.smartReviewOptions.classList.remove('hidden');
+            } else {
+                elements.smartReviewOptions.classList.add('hidden');
+            }
+        }
+        
+        // 更新单元选择器
+        function updateUnitSelector() {
+            elements.unitSelector.innerHTML = '';
+            elements.mobileUnitSelector.innerHTML = '';
+            
+            Object.keys(appState.units).forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = `单元 ${unit}`;
+                if (parseInt(unit) === appState.currentUnit) {
+                    option.selected = true;
+                }
+                elements.unitSelector.appendChild(option);
+                
+                const mobileOption = document.createElement('option');
+                mobileOption.value = unit;
+                mobileOption.textContent = `单元 ${unit}`;
+                if (parseInt(unit) === appState.currentUnit) {
+                    mobileOption.selected = true;
+                }
+                elements.mobileUnitSelector.appendChild(mobileOption);
+            });
+        }
+        
+        // 更新复习统计
+        function updateReviewStats() {
+            const difficultCount = Object.keys(appState.difficultWords).length;
+            const today = getTodayString();
+            const studiedToday = appState.studyProgress[today] && appState.studyProgress[today][appState.currentUnit] || 0;
+            const dailyGoal = appState.settings.dailyGoal;
+            
+            elements.reviewCount.textContent = appState.reviewState.remainingWords.length;
+            elements.difficultCount.textContent = difficultCount;
+            elements.todayProgress.textContent = `${studiedToday}/${dailyGoal}`;
+            
+            const modeText = {
+                'difficult': '生词本',
+                'daily': '今日词汇',
+                'smart': '智能复习'
+            };
+            elements.reviewModeText.textContent = `模式: ${modeText[appState.reviewState.mode] || appState.reviewState.mode}`;
+        }
+        
+        // 初始化复习功能
+        function initReview() {
+            elements.startReviewBtn.addEventListener('click', () => {
+                const reviewMode = document.querySelector('input[name="review-mode"]:checked').value;
+                startReview(reviewMode);
+            });
+            
+            elements.pauseReviewBtn.addEventListener('click', () => {
+                pauseReview();
+            });
+            
+            elements.answerCorrectBtn.addEventListener('click', () => {
+                handleReviewAnswer(true);
+            });
+            
+            elements.answerIncorrectBtn.addEventListener('click', () => {
+                handleReviewAnswer(false);
+            });
+            
+            elements.flipCardBtn.addEventListener('click', () => {
+                flipFlashcard();
+            });
+            
+            // 点击闪卡翻转
+            elements.reviewCard.addEventListener('click', (e) => {
+                if (!e.target.closest('button') && appState.reviewState.inProgress) {
+                    flipFlashcard();
+                }
+            });
+            
+            document.querySelectorAll('input[name="review-mode"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    appState.settings.reviewMode = this.value;
+                    toggleSmartReviewOptions();
+                    saveAppState();
+                });
+            });
+        }
+        
+        // 翻转闪卡
+        function flipFlashcard() {
+            if (appState.reviewState.inProgress && appState.reviewState.currentWord) {
+                elements.reviewCard.classList.toggle('flipped');
+                
+                // 清除自动翻卡计时器
+                if (appState.reviewState.autoFlipTimer) {
+                    clearTimeout(appState.reviewState.autoFlipTimer);
+                    appState.reviewState.autoFlipTimer = null;
+                }
+                
+                // 如果翻到背面且启用了自动发音，播放发音
+                if (elements.reviewCard.classList.contains('flipped') && 
+                    appState.settings.flashcardAutoPronounce && 
+                    appState.reviewState.currentWord) {
+                    pronounceWord(appState.reviewState.currentWord.word);
+                }
+            }
+        }
+        // 注册Service Worker - 修复版本
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // 创建更完整的service worker
+                const swContent = `
+                    const CACHE_NAME = 'vocabulary-card-v5.1.0';
+                    const urlsToCache = [
+                        './',
+                        './?utm_source=pwa',
+                        'https://cdn.tailwindcss.com',
+                        'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
+                    ];
+
+                    self.addEventListener('install', function(event) {
+                        console.log('Service Worker installing');
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(function(cache) {
+                                    console.log('Opened cache');
+                                    return cache.addAll(urlsToCache);
+                                })
+                                .then(() => self.skipWaiting())
+                        );
+                    });
+
+                    self.addEventListener('activate', function(event) {
+                        console.log('Service Worker activating');
+                        event.waitUntil(
+                            caches.keys().then(function(cacheNames) {
+                                return Promise.all(
+                                    cacheNames.map(function(cacheName) {
+                                        if (cacheName !== CACHE_NAME) {
+                                            console.log('Deleting old cache:', cacheName);
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            }).then(() => self.clients.claim())
+                        );
+                    });
+
+                    self.addEventListener('fetch', function(event) {
+                        if (event.request.url.includes('chrome-extension')) return;
+                        
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(function(response) {
+                                    if (response) {
+                                        return response;
+                                    }
+                                    
+                                    return fetch(event.request).then(function(response) {
+                                        if(!response || response.status !== 200 || response.type !== 'basic') {
+                                            return response;
+                                        }
+                                        
+                                        var responseToCache = response.clone();
+                                        caches.open(CACHE_NAME)
+                                            .then(function(cache) {
+                                                cache.put(event.request, responseToCache);
+                                            });
+                                        
+                                        return response;
+                                    });
+                                }).catch(function() {
+                                    // 离线时返回缓存的首页
+                                    return caches.match('./');
+                                })
+                        );
+                    });
+                `;
+                
+                const blob = new Blob([swContent], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swURL)
+                    .then(function(registration) {
+                        console.log('Service Worker 注册成功: ', registration.scope);
+                        
+                        // 检查是否有新版本
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('New Service Worker found!');
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('New content is available; please refresh.');
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker 注册失败: ', error);
+                    });
+                    
+                // 监听控制权变化
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+        // 开始复习
+        function startReview(mode) {
+            appState.reviewState.mode = mode;
+            appState.reviewState.inProgress = true;
+            
+            if (mode === 'difficult') {
+                appState.reviewState.remainingWords = Object.keys(appState.difficultWords).map(key => {
+                    const [unit, word] = key.split('-');
+                    const wordData = appState.units[unit]?.find(w => w.word === word);
+                    return { ...wordData, unit: parseInt(unit) };
+                }).filter(word => word);
+            } else if (mode === 'daily') {
+                appState.reviewState.remainingWords = [...appState.todayWords];
+            } else if (mode === 'smart') {
+                appState.reviewState.remainingWords = getSmartReviewWords();
+            }
+            
+            if (appState.reviewState.remainingWords.length === 0) {
+                elements.reviewCardStatus.textContent = mode === 'difficult' ? '生词本为空' : 
+                                                       mode === 'daily' ? '今日没有需要复习的单词' : 
+                                                       '没有找到需要复习的单词';
+                elements.reviewActions.classList.add('hidden');
+                elements.startReviewBtn.classList.remove('hidden');
+                elements.pauseReviewBtn.classList.add('hidden');
+                return;
+            }
+            
+            appState.reviewState.remainingWords = appState.reviewState.remainingWords.sort(() => Math.random() - 0.5);
+            
+            showNextReviewWord();
+            
+            elements.reviewActions.classList.remove('hidden');
+            elements.startReviewBtn.classList.add('hidden');
+            elements.pauseReviewBtn.classList.remove('hidden');
+            updateReviewStats();
+        }
+        
+        // 暂停复习
+        function pauseReview() {
+            appState.reviewState.inProgress = false;
+            
+            if (appState.reviewState.autoFlipTimer) {
+                clearTimeout(appState.reviewState.autoFlipTimer);
+                appState.reviewState.autoFlipTimer = null;
+            }
+            
+            elements.reviewCard.innerHTML = `
+                <div class="flashcard-inner">
+                    <div class="flashcard-front bg-white dark:bg-dark-card p-6 rounded-xl">
+                        <div class="text-center py-8">
+                            <p class="text-light-textLight dark:text-dark-textLight">复习已暂停</p>
+                            <button id="resume-review" class="mt-4 bg-primary hover:bg-primary/90 text-white rounded-lg py-2 px-4 transition-all duration-300 touch-button">
+                                继续复习
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flashcard-back bg-white dark:bg-dark-card p-6 rounded-xl">
+                        <div class="text-center py-8">
+                            <p class="text-light-textLight dark:text-dark-textLight">复习已暂停</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            elements.reviewActions.classList.add('hidden');
+            elements.startReviewBtn.classList.remove('hidden');
+            elements.pauseReviewBtn.classList.add('hidden');
+            
+            // 添加继续复习按钮事件
+            document.getElementById('resume-review').addEventListener('click', () => {
+                appState.reviewState.inProgress = true;
+                showNextReviewWord();
+                elements.reviewActions.classList.remove('hidden');
+                elements.startReviewBtn.classList.add('hidden');
+                elements.pauseReviewBtn.classList.remove('hidden');
+            });
+        }
+        
+        // 获取智能复习单词
+        function getSmartReviewWords() {
+            const smartWords = [];
+            const todayChunk = appState.settings.todayChunk || appState.currentChunk;
+            
+            const todayChunkWords = getChunkWords(appState.currentUnit, todayChunk);
+            
+            todayChunkWords.forEach(wordData => {
+                const wordKey = `${appState.currentUnit}-${wordData.word}`;
+                const isMastered = appState.masteredWords[wordKey];
+                const isDifficult = appState.difficultWords[wordKey];
+                const isTodayWord = appState.todayWords.some(w => w.word === wordData.word);
+                
+                if (isDifficult && appState.settings.smartIncludeDifficult) {
+                    smartWords.push({ ...wordData, unit: appState.currentUnit, priority: 1 });
+                }
+                else if (isTodayWord && !isMastered) {
+                    smartWords.push({ ...wordData, unit: appState.currentUnit, priority: 2 });
+                }
+                else if (isMastered && appState.settings.smartIncludeMastered) {
+                    smartWords.push({ ...wordData, unit: appState.currentUnit, priority: 3 });
+                }
+            });
+            
+            smartWords.sort((a, b) => a.priority - b.priority);
+            
+            return smartWords;
+        }
+        
+        // 显示下一个复习单词
+        function showNextReviewWord() {
+            if (appState.reviewState.remainingWords.length === 0) {
+                elements.reviewCard.innerHTML = `
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front bg-white dark:bg-dark-card p-6 rounded-xl">
+                            <div class="text-center py-8">
+                                <i class="fa fa-check-circle text-success text-4xl mb-3"></i>
+                                <h3 class="text-lg font-bold text-light-text dark:text-dark-text mb-2">复习完成！</h3>
+                                <p class="text-light-textLight dark:text-dark-textLight">恭喜您完成了本次复习</p>
+                            </div>
+                        </div>
+                        <div class="flashcard-back bg-white dark:bg-dark-card p-6 rounded-xl">
+                            <div class="text-center py-8">
+                                <i class="fa fa-check-circle text-success text-4xl mb-3"></i>
+                                <h3 class="text-lg font-bold text-light-text dark:text-dark-text mb-2">复习完成！</h3>
+                                <p class="text-light-textLight dark:text-dark-textLight">恭喜您完成了本次复习</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                elements.reviewActions.classList.add('hidden');
+                elements.startReviewBtn.classList.remove('hidden');
+                elements.pauseReviewBtn.classList.add('hidden');
+                appState.reviewState.inProgress = false;
+                return;
+            }
+            
+            appState.reviewState.currentWord = appState.reviewState.remainingWords[0];
+            const word = appState.reviewState.currentWord;
+            
+            // 确保闪卡处于正面状态
+            elements.reviewCard.classList.remove('flipped');
+            
+            // 构建闪卡内容
+            let backContent = `
+                <div class="flex flex-col h-full">
+                    <!-- 顶部固定区域：单词基本信息 -->
+                    <div class="flex-shrink-0 border-b border-light-border dark:border-dark-border pb-4 mb-4">
+                        <div class="text-center">
+                            <h3 class="text-2xl font-bold text-light-text dark:text-dark-text mb-2 break-words">${word.word}</h3>
+                            <div class="flex justify-center items-center gap-4 mb-3">
+                                ${word.phonetic ? `
+                                    <span class="text-light-textLight dark:text-dark-textLight text-lg">${word.phonetic}</span>
+                                ` : ''}
+                                ${word.partOfSpeech ? `
+                                    <span class="text-light-textLight dark:text-dark-textLight text-lg">${word.partOfSpeech}</span>
+                                ` : ''}
+                            </div>
+                            <button class="pronounce-btn-review text-primary hover:text-primary/80 transition-colors duration-300 p-2 rounded-full hover:bg-light-border/30 dark:hover:bg-dark-border/30 mx-auto touch-button">
+                                <i class="fa fa-volume-up text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 可滚动区域：详细信息 -->
+                    <div class="flex-1 overflow-y-auto space-y-4 scrollbar-thin">
+            `;
+            
+            // 根据设置添加内容
+            if (word.definition) {
+                backContent += `
+                    <div>
+                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-2 text-sm">释义</h4>
+                        <p class="text-light-text dark:text-dark-text text-sm leading-relaxed">${word.definition}</p>
+                    </div>
+                `;
+            }
+            
+            if (word.example && appState.settings.flashcardShowExample) {
+                backContent += `
+                    <div>
+                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-2 text-sm">真题例句</h4>
+                        <p class="text-light-text dark:text-dark-text text-sm italic leading-relaxed">${word.example}</p>
+                    </div>
+                `;
+            }
+            
+            if (word.memory && appState.settings.flashcardShowMemory) {
+                backContent += `
+                    <div>
+                        <h4 class="font-semibold text-light-text dark:text-dark-text mb-2 text-sm">记忆方法</h4>
+                        <p class="text-light-text dark:text-dark-text text-sm leading-relaxed">${word.memory}</p>
+                    </div>
+                `;
+            }
+            
+            backContent += `
+                    </div>
+                </div>
+            `;
+            
+            // 更新闪卡HTML
+            elements.reviewCard.innerHTML = `
+                <div class="flashcard-inner">
+                    <div class="flashcard-front bg-white dark:bg-dark-card p-6 rounded-xl flex flex-col justify-center items-center">
+                        <h3 class="text-2xl font-bold text-light-text dark:text-dark-text mb-2 break-words">${word.word}</h3>
+                        <p class="text-light-textLight dark:text-dark-textLight mb-4">点击卡片查看释义</p>
+                        <div class="flashcard-actions">
+                            <button class="pronounce-btn-front text-primary hover:text-primary/80 transition-colors duration-300 p-2 rounded-full hover:bg-light-border/30 dark:hover:bg-dark-border/30 touch-button">
+                                <i class="fa fa-volume-up text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flashcard-back bg-white dark:bg-dark-card p-6 rounded-xl">
+                        ${backContent}
+                    </div>
+                </div>
+            `;
+            // 添加发音按钮事件
+            elements.reviewCard.querySelector('.pronounce-btn-review')?.addEventListener('click', () => {
+                pronounceWord(word.word);
+            });
+            
+            elements.reviewCard.querySelector('.pronounce-btn-front')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                pronounceWord(word.word);
+            });
+            
+            // 如果启用了自动发音，播放单词发音
+            if (appState.settings.flashcardAutoPronounce) {
+                pronounceWord(word.word);
+            }
+            
+            // 如果启用了自动翻卡，设置计时器
+            if (appState.settings.flashcardAutoFlip) {
+                appState.reviewState.autoFlipTimer = setTimeout(() => {
+                    if (appState.reviewState.inProgress) {
+                        flipFlashcard();
+                    }
+                }, 3000);
+            }
+            
+            updateReviewStats();
+        }
+        
+        // 处理复习回答
+        function handleReviewAnswer(isCorrect) {
+            const word = appState.reviewState.currentWord;
+            const wordKey = `${word.unit || appState.currentUnit}-${word.word}`;
+            
+            if (isCorrect) {
+                if (appState.reviewState.mode === 'difficult' || appState.reviewState.mode === 'smart') {
+                    appState.correctCounts[wordKey] = (appState.correctCounts[wordKey] || 0) + 1;
+                    
+                    if (appState.settings.fourTimesRule && appState.correctCounts[wordKey] >= 4) {
+                        delete appState.difficultWords[wordKey];
+                        showToast(`"${word.word}" 已连续答对4次，已从生词本中移除`, 'success');
+                    }
+                }
+                
+                const today = getTodayString();
+                if (!appState.studyProgress[today]) {
+                    appState.studyProgress[today] = {};
+                }
+                if (!appState.studyProgress[today][appState.currentUnit]) {
+                    appState.studyProgress[today][appState.currentUnit] = 0;
+                }
+                appState.studyProgress[today][appState.currentUnit]++;
+            } else {
+                if (appState.reviewState.mode === 'difficult' || appState.reviewState.mode === 'smart') {
+                    appState.correctCounts[wordKey] = 0;
+                    appState.difficultWords[wordKey] = true;
+                }
+                
+                appState.reviewState.remainingWords.push(word);
+            }
+            
+            appState.reviewState.remainingWords.shift();
+            
+            saveAppState();
+            showNextReviewWord();
+            updateStats();
+            renderVocabularyCards();
+        }
+        // 检查PWA状态
+        function checkPWAStatus() {
+            // 检查是否以独立模式运行
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone === true;
+            
+            if (isStandalone) {
+                console.log('应用正在以PWA独立模式运行');
+                showToast('PWA全屏模式已启用', 'success');
+            } else {
+                console.log('应用正在浏览器中运行');
+            }
+            
+            // 检查Service Worker支持
+            if ('serviceWorker' in navigator) {
+                console.log('Service Worker 支持: 是');
+            } else {
+                console.log('Service Worker 支持: 否');
+            }
+            
+            // 检查缓存API支持
+            if ('caches' in window) {
+                console.log('Cache API 支持: 是');
+            } else {
+                console.log('Cache API 支持: 否');
+            }
+        }
+
+        // 在 initApp 函数中调用
+        function initApp() {
+            const initialWords = parseVocabularyData(initialRawVocabularyData);
+            appState.units[1] = initialWords;
+            
+            calculateChunks(initialWords);
+            checkDateChange();
+            loadAppState();
+            initEventListeners();
+            initReview();
+            renderVocabularyCards();
+            updateStats();
+            checkPWAStatus(); // 添加这行
+            
+            console.log('应用初始化完成');
+        }
+        // 初始化事件监听
+        function initEventListeners() {
+            // 展开/收起所有卡片
+            elements.expandAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.bg-light-card, .bg-dark-card').forEach(card => {
+                    card.classList.add('card-expanded');
+                    card.querySelector('.fa-chevron-down')?.classList.add('open');
+                });
+            });
+            
+            elements.collapseAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.bg-light-card, .bg-dark-card').forEach(card => {
+                    card.classList.remove('card-expanded');
+                    card.querySelector('.fa-chevron-down')?.classList.remove('open');
+                });
+            });
+            // 在 initEventListeners 函数中添加
+            elements.fullscreenBtn?.addEventListener('click', toggleFullscreen);
+
+            // 全屏功能
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.log('全屏请求失败:', err);
+                        showToast('无法进入全屏模式', 'error');
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+
+            // 监听全屏变化
+            document.addEventListener('fullscreenchange', () => {
+                if (document.fullscreenElement) {
+                    showToast('已进入全屏模式', 'success');
+                } else {
+                    showToast('已退出全屏模式', 'info');
+                }
+            });
+            // PWA 安装提示
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // 可以在这里显示安装按钮
+                console.log('PWA 可以安装了');
+                
+                // 可选：自动显示安装提示（在用户交互后）
+                setTimeout(() => {
+                    if (deferredPrompt) {
+                        showPWAInstallPrompt();
+                    }
+                }, 3000);
+            });
+
+            // 显示PWA安装提示
+            function showPWAInstallPrompt() {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('用户接受了PWA安装提示');
+                        } else {
+                            console.log('用户拒绝了PWA安装提示');
+                        }
+                        deferredPrompt = null;
+                    });
+                }
+            }
+
+            // 监听应用成功安装
+            window.addEventListener('appinstalled', () => {
+                console.log('PWA已成功安装');
+                deferredPrompt = null;
+                showToast('应用已成功安装到设备！', 'success');
+            });  
+            // 桌面端菜单切换
+            elements.desktopMenuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                elements.desktopNavMenu.classList.toggle('hidden');
+            });
+
+            // 移动端菜单切换
+            elements.mobileMenuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                elements.mobileNavMenu.classList.toggle('hidden');
+            });
+
+            // 点击外部关闭菜单
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#desktop-nav-menu') && !e.target.closest('#desktop-menu-toggle')) {
+                    elements.desktopNavMenu.classList.add('hidden');
+                }
+                if (!e.target.closest('#mobile-nav-menu') && !e.target.closest('#mobile-menu-toggle')) {
+                    elements.mobileNavMenu.classList.add('hidden');
+                }
+            });
+
+            // 移动端菜单中的按钮事件
+            elements.mobileExpandAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.bg-light-card, .bg-dark-card').forEach(card => {
+                    card.classList.add('card-expanded');
+                    card.querySelector('.fa-chevron-down')?.classList.add('open');
+                });
+                elements.mobileNavMenu.classList.add('hidden');
+            });
+
+            elements.mobileCollapseAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.bg-light-card, .bg-dark-card').forEach(card => {
+                    card.classList.remove('card-expanded');
+                    card.querySelector('.fa-chevron-down')?.classList.remove('open');
+                });
+                elements.mobileNavMenu.classList.add('hidden');
+            });
+
+            elements.mobileSettingsBtn.addEventListener('click', () => {
+                elements.settingsPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+                elements.mobileNavMenu.classList.add('hidden');
+            });       
+            // 设置面板
+            elements.settingsBtn.addEventListener('click', () => {
+                elements.settingsPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+            });
+            
+            elements.mobileSettingsBtn.addEventListener('click', () => {
+                elements.settingsPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+            });
+            
+            elements.closeSettingsBtn.addEventListener('click', () => {
+                elements.settingsPanel.classList.add('translate-x-full');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+            });
+            
+            // 复习面板
+            elements.reviewBtn.addEventListener('click', () => {
+                elements.reviewPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+                updateReviewStats();
+            });
+            
+            elements.mobileReviewBtn.addEventListener('click', () => {
+                elements.reviewPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+                updateReviewStats();
+            });
+            
+            elements.closeReviewBtn.addEventListener('click', () => {
+                elements.reviewPanel.classList.add('translate-x-full');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+            });
+            
+            // 生词本面板
+            elements.difficultBtn.addEventListener('click', () => {
+                renderDifficultWords();
+                elements.difficultWordsPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+            });
+            
+            elements.mobileDifficultBtn.addEventListener('click', () => {
+                renderDifficultWords();
+                elements.difficultWordsPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+            });
+            
+            elements.closeDifficultBtn.addEventListener('click', () => {
+                elements.difficultWordsPanel.classList.add('translate-x-full');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+            });
+            
+            // 遮罩层点击关闭面板
+            elements.overlay.addEventListener('click', () => {
+                elements.settingsPanel.classList.add('translate-x-full');
+                elements.reviewPanel.classList.add('translate-x-full');
+                elements.difficultWordsPanel.classList.add('translate-x-full');
+                elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+                elements.mobileNavMenu.classList.add('hidden');
+                elements.desktopNavMenu.classList.add('hidden');
+            });
+            
+            // 保存设置
+            elements.saveSettingsBtn.addEventListener('click', () => {
+                appState.settings.autoPronounce = elements.autoPronounceCheckbox.checked;
+                appState.settings.showBasicInfo = elements.showBasicInfoCheckbox.checked;
+                appState.settings.darkMode = elements.darkModeCheckbox.checked;
+                appState.settings.fourTimesRule = elements.fourTimesRuleCheckbox.checked;
+                appState.settings.dailyGoal = parseInt(elements.dailyGoalInput.value) || 10;
+                appState.settings.chunkSize = parseInt(elements.chunkSizeInput.value) || 10;
+                appState.settings.todayChunk = parseInt(elements.todayChunkSelector.value) || 1;
+                appState.settings.reviewMode = document.querySelector('input[name="review-mode"]:checked').value;
+                appState.settings.smartIncludeDifficult = elements.smartIncludeDifficult.checked;
+                appState.settings.smartIncludeMastered = elements.smartIncludeMastered.checked;
+                
+                // 闪卡设置
+                appState.settings.flashcardAutoFlip = elements.flashcardAutoFlip.checked;
+                appState.settings.flashcardShowExample = elements.flashcardShowExample.checked;
+                appState.settings.flashcardShowMemory = elements.flashcardShowMemory.checked;
+                appState.settings.flashcardAutoPronounce = elements.flashcardAutoPronounce.checked;
+                
+                if (appState.settings.darkMode) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+                
+                calculateChunks(appState.units[appState.currentUnit] || []);
+                generateDailyPlan();
+                saveAppState();
+                renderVocabularyCards();
+                updateStats();
+                
+                elements.settingsPanel.classList.add('translate-x-full');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+                
+                showToast('设置已保存', 'success');
+            });
+            // 隐私政策和用户协议面板控制
+            document.getElementById('privacy-policy-btn').addEventListener('click', () => {
+                elements.privacyPolicyPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+            });
+
+            document.getElementById('user-agreement-btn').addEventListener('click', () => {
+                elements.userAgreementPanel.classList.remove('translate-x-full');
+                elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+            });
+
+            document.getElementById('close-privacy-policy').addEventListener('click', () => {
+                elements.privacyPolicyPanel.classList.add('translate-x-full');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+            });
+
+            document.getElementById('close-user-agreement').addEventListener('click', () => {
+                elements.userAgreementPanel.classList.add('translate-x-full');
+                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+            });
+            // 重新生成今日计划
+            elements.regeneratePlanBtn.addEventListener('click', () => {
+                generateDailyPlan();
+                showToast('今日计划已重新生成', 'success');
+            });
+            
+            // 重置今日进度
+            elements.resetTodayBtn.addEventListener('click', () => {
+                const today = getTodayString();
+                if (appState.studyProgress[today]) {
+                    appState.studyProgress[today][appState.currentUnit] = 0;
+                }
+                updateStats();
+                showToast('今日进度已重置', 'info');
+            });
+            
+            // 单元选择器
+            elements.unitSelector.addEventListener('change', function() {
+                appState.currentUnit = parseInt(this.value);
+                appState.currentChunk = 1;
+                elements.currentUnitText.textContent = `单元 ${appState.currentUnit}`;
+                
+                checkDateChange();
+                updateChunkSelector();
+                updateTodayChunkSelector();
+                updateChunkInfo();
+                renderVocabularyCards();
+                updateStats();
+                saveAppState();
+            });
+            
+            // 移动端单元选择器
+            elements.mobileUnitSelector.addEventListener('change', function() {
+                elements.unitSelector.value = this.value;
+                elements.unitSelector.dispatchEvent(new Event('change'));
+            });
+            
+            // 分块选择器
+            elements.chunkSelector.addEventListener('change', function() {
+                appState.currentChunk = parseInt(this.value);
+                updateChunkInfo();
+                renderVocabularyCards();
+                updateStats();
+                saveAppState();
+            });
+            
+            // 移动端分块选择器
+            elements.mobileChunkSelector.addEventListener('change', function() {
+                elements.chunkSelector.value = this.value;
+                elements.chunkSelector.dispatchEvent(new Event('change'));
+            });
+            
+            // 文件导入
+            elements.wordImport.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const content = event.target.result;
+                    const unitNumber = getUnitFromFilename(file.name);
+                    
+                    const words = parseVocabularyData(content);
+                    
+                    if (words.length > 0) {
+                        if (!appState.units[unitNumber]) {
+                            appState.units[unitNumber] = [];
+                        }
+                        
+                        const existingWords = new Set(appState.units[unitNumber].map(w => w.word));
+                        const newWords = words.filter(w => !existingWords.has(w.word));
+                        
+                        appState.units[unitNumber].push(...newWords);
+                        
+                        addUnitToSelector(unitNumber);
+                        
+                        if (appState.currentUnit === unitNumber) {
+                            calculateChunks(appState.units[unitNumber]);
+                            renderVocabularyCards();
+                            updateStats();
+                        }
+                        
+                        saveAppState();
+                        
+                        elements.importStatus.textContent = `成功导入 ${newWords.length} 个单词到单元 ${unitNumber}`;
+                        elements.importStatus.className = 'mt-2 text-sm text-success';
+                        elements.importStatus.classList.remove('hidden');
+                        
+                        showToast(`成功导入 ${newWords.length} 个单词`, 'success');
+                    } else {
+                        elements.importStatus.textContent = '导入失败：未找到有效的单词数据';
+                        elements.importStatus.className = 'mt-2 text-sm text-danger';
+                        elements.importStatus.classList.remove('hidden');
+                    }
+                    
+                    elements.wordImport.value = '';
+                };
+                
+                reader.readAsText(file);
+            });
+            
+            // 拖拽文件导入
+            const dropArea = elements.wordImport.parentElement;
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.add('bg-primary/10', 'border-primary');
+                }, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.remove('bg-primary/10', 'border-primary');
+                }, false);
+            });
+            
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    elements.wordImport.files = files;
+                    const event = new Event('change', { bubbles: true });
+                    elements.wordImport.dispatchEvent(event);
+                }
+            }, false);
+        }
+        
+        // 渲染生词本
+        function renderDifficultWords() {
+        const difficultWordsList = elements.difficultWordsList;
+        difficultWordsList.innerHTML = '';
+        
+        const difficultWords = Object.keys(appState.difficultWords);
+        
+        // 更新计数
+        elements.difficultWordsCount.textContent = `${difficultWords.length}个生词`;
+        
+        if (difficultWords.length === 0) {
+            difficultWordsList.innerHTML = `
+            <div class="text-center py-12 text-light-textLight dark:text-dark-textLight">
+                <i class="fa fa-bookmark-o text-4xl mb-3 opacity-50"></i>
+                <p class="text-lg">生词本为空</p>
+                <p class="text-sm mt-2">将单词添加到生词本后，会在这里显示</p>
+            </div>
+            `;
+            return;
+        }
+        
+        difficultWords.forEach(key => {
+            const [unit, word] = key.split('-');
+            const wordData = appState.units[unit]?.find(w => w.word === word);
+            
+            if (wordData) {
+            const correctCount = appState.correctCounts[key] || 0;
+            const isMastered = appState.masteredWords[key];
+            
+            const wordElement = document.createElement('div');
+            wordElement.className = 'bg-light-bg dark:bg-dark-bg rounded-xl p-4 border border-light-border dark:border-dark-border card-transition';
+            wordElement.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                <div class="flex-1">
+                    <div class="flex items-center">
+                    <h3 class="text-lg font-bold text-light-text dark:text-dark-text mr-2">${wordData.word}</h3>
+                    ${isMastered ? '<span class="text-xs bg-success/20 text-success px-2 py-1 rounded">已掌握</span>' : ''}
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                    <span class="text-light-textLight dark:text-dark-textLight text-sm">${wordData.phonetic || ''}</span>
+                    <span class="text-light-textLight dark:text-dark-textLight text-sm">${wordData.partOfSpeech || ''}</span>
+                    </div>
+                    <p class="text-light-text dark:text-dark-text text-sm mt-1">${wordData.definition || ''}</p>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button class="pronounce-btn-difficult text-primary hover:text-primary/80 transition-colors duration-300 p-2 touch-button" title="发音">
+                    <i class="fa fa-volume-up"></i>
+                    </button>
+                    <button class="remove-difficult-btn-difficult text-danger hover:text-danger/80 transition-colors duration-300 p-2 touch-button" title="移出生词本">
+                    <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                </div>
+                
+                <div class="border-t border-light-border dark:border-dark-border pt-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-light-textLight dark:text-dark-textLight">单元 ${unit} • 答对: ${correctCount}/4</span>
+                    <button class="toggle-difficult-card text-primary hover:text-primary/80 transition-colors duration-300 text-sm touch-button">
+                    <i class="fa fa-chevron-down rotate-icon mr-1"></i> 详细信息
+                    </button>
+                </div>
+                
+                <div class="card-expand-content mt-2">
+                    ${wordData.example ? `
+                    <div class="mb-3">
+                        <h4 class="font-semibold text-light-text dark:text-dark-text text-sm mb-1">真题例句</h4>
+                        <p class="text-light-text dark:text-dark-text text-sm italic">${wordData.example}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${wordData.memory ? `
+                    <div class="mb-3">
+                        <h4 class="font-semibold text-light-text dark:text-dark-text text-sm mb-1">记忆方法</h4>
+                        <p class="text-light-text dark:text-dark-text text-sm">${wordData.memory}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${wordData.derivative ? `
+                    <div>
+                        <h4 class="font-semibold text-light-text dark:text-dark-text text-sm mb-1">派生词</h4>
+                        <p class="text-light-text dark:text-dark-text text-sm">${wordData.derivative}</p>
+                    </div>
+                    ` : ''}
+                </div>
+                </div>
+            `;
+            
+            // 添加事件监听
+            wordElement.querySelector('.pronounce-btn-difficult').addEventListener('click', () => {
+                pronounceWord(wordData.word);
+            });
+            
+            wordElement.querySelector('.remove-difficult-btn-difficult').addEventListener('click', () => {
+                removeFromDifficultWords(wordData.word);
+                renderDifficultWords();
+                updateStats();
+                showToast(`"${wordData.word}" 已从生词本中移除`, 'info');
+            });
+            
+            wordElement.querySelector('.toggle-difficult-card').addEventListener('click', function() {
+                const card = this.closest('.bg-light-bg, .bg-dark-bg');
+                const icon = this.querySelector('.fa-chevron-down');
+                card.classList.toggle('card-expanded');
+                icon.classList.toggle('open');
+            });
+            
+            difficultWordsList.appendChild(wordElement);
+            }
+        });
+        }
+        
+        // 初始化应用
+        function initApp() {
+            const initialWords = parseVocabularyData(initialRawVocabularyData);
+            appState.units[1] = initialWords;
+            
+            calculateChunks(initialWords);
+            checkDateChange();
+            loadAppState();
+            initEventListeners();
+            initReview();
+            renderVocabularyCards();
+            updateStats();
+            
+            console.log('应用初始化完成');
+        }
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

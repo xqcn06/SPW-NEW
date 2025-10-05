@@ -2560,6 +2560,9 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                             
                             // 重置文件输入
                             e.target.value = '';
+                            // 添加这行：关闭对话框
+                            elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
+                            elements.overlay.classList.add('opacity-0', 'pointer-events-none');
                         }
                     );
                     
@@ -2573,7 +2576,6 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             
             reader.readAsText(file);
         }  
-        // 如果还没有这个函数，请添加
         function showConfirmDialog(title, message, confirmCallback) {
             elements.dialogTitle.textContent = title;
             elements.dialogMessage.textContent = message;
@@ -2589,17 +2591,39 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             const newConfirmBtn = elements.confirmDialog.querySelector('#dialog-confirm');
             const newCancelBtn = elements.confirmDialog.querySelector('#dialog-cancel');
             
-            newConfirmBtn.addEventListener('click', () => {
+            // 关闭对话框的函数
+            const closeDialog = () => {
                 elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
                 elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+            };
+            
+            newConfirmBtn.addEventListener('click', () => {
+                closeDialog();
                 confirmCallback();
             });
             
             newCancelBtn.addEventListener('click', () => {
-                elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
-                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+                closeDialog();
             });
-        }      
+            
+            // 添加ESC键关闭
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') {
+                    closeDialog();
+                    document.removeEventListener('keydown', handleKeydown);
+                }
+            };
+            
+            document.addEventListener('keydown', handleKeydown);
+            
+            // 对话框关闭后移除ESC监听
+            elements.confirmDialog.addEventListener('transitionend', function handler() {
+                if (elements.confirmDialog.classList.contains('opacity-0')) {
+                    document.removeEventListener('keydown', handleKeydown);
+                    elements.confirmDialog.removeEventListener('transitionend', handler);
+                }
+            });
+        }  
         // 渲染生词本
         function renderDifficultWords() {
         const difficultWordsList = elements.difficultWordsList;

@@ -13,32 +13,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="词汇学习卡片">
 
-    <!-- 使用极简图标 -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230047b1'/><text x='50' y='70' font-family='Arial' font-size='60' text-anchor='middle' fill='white'>V</text></svg>">
-
-    <!-- 修复后的 Manifest -->
-    <link rel="manifest" href="data:application/manifest+json,{
-      \"name\": \"词汇卡片\",
-      \"short_name\": \"词汇卡片\", 
-      \"start_url\": \"./\",
-      \"display\": \"standalone\",
-      \"theme_color\": \"#0047b1\",
-      \"background_color\": \"#0047b1\",
-      \"orientation\": \"portrait\",
-      \"scope\": \"./\",
-      \"icons\": [
-        {
-          \"src\": \"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230047b1'/><text x='50' y='70' font-family='Arial' font-size='60' text-anchor='middle' fill='white'>V</text></svg>\",
-          \"sizes\": \"192x192\",
-          \"type\": \"image/svg+xml\"
-        },
-        {
-          \"src\": \"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230047b1'/><text x='50' y='70' font-family='Arial' font-size='60' text-anchor='middle' fill='white'>V</text></svg>\",
-          \"sizes\": \"512x512\",
-          \"type\": \"image/svg+xml\"
-        }
-      ]
-    }">
+    <!-- 替换原有的内联manifest为外部引用 -->
+    <link rel="manifest" href="./manifest.json">
+    <!-- 添加PWA安装提示脚本 -->
+    <script src="./pwa-install.js" defer></script>    
     <!-- Tailwind配置 -->
     <script>
         tailwind.config = {
@@ -1773,111 +1751,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 }
             }
         }
-        // 注册Service Worker - 修复版本
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                // 创建更完整的service worker
-                const swContent = `
-                    const CACHE_NAME = 'vocabulary-card-v5.1.0';
-                    const urlsToCache = [
-                        './',
-                        './?utm_source=pwa',
-                        'https://cdn.tailwindcss.com',
-                        'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
-                    ];
 
-                    self.addEventListener('install', function(event) {
-                        console.log('Service Worker installing');
-                        event.waitUntil(
-                            caches.open(CACHE_NAME)
-                                .then(function(cache) {
-                                    console.log('Opened cache');
-                                    return cache.addAll(urlsToCache);
-                                })
-                                .then(() => self.skipWaiting())
-                        );
-                    });
-
-                    self.addEventListener('activate', function(event) {
-                        console.log('Service Worker activating');
-                        event.waitUntil(
-                            caches.keys().then(function(cacheNames) {
-                                return Promise.all(
-                                    cacheNames.map(function(cacheName) {
-                                        if (cacheName !== CACHE_NAME) {
-                                            console.log('Deleting old cache:', cacheName);
-                                            return caches.delete(cacheName);
-                                        }
-                                    })
-                                );
-                            }).then(() => self.clients.claim())
-                        );
-                    });
-
-                    self.addEventListener('fetch', function(event) {
-                        if (event.request.url.includes('chrome-extension')) return;
-                        
-                        event.respondWith(
-                            caches.match(event.request)
-                                .then(function(response) {
-                                    if (response) {
-                                        return response;
-                                    }
-                                    
-                                    return fetch(event.request).then(function(response) {
-                                        if(!response || response.status !== 200 || response.type !== 'basic') {
-                                            return response;
-                                        }
-                                        
-                                        var responseToCache = response.clone();
-                                        caches.open(CACHE_NAME)
-                                            .then(function(cache) {
-                                                cache.put(event.request, responseToCache);
-                                            });
-                                        
-                                        return response;
-                                    });
-                                }).catch(function() {
-                                    // 离线时返回缓存的首页
-                                    return caches.match('./');
-                                })
-                        );
-                    });
-                `;
-                
-                const blob = new Blob([swContent], { type: 'application/javascript' });
-                const swURL = URL.createObjectURL(blob);
-                
-                navigator.serviceWorker.register(swURL)
-                    .then(function(registration) {
-                        console.log('Service Worker 注册成功: ', registration.scope);
-                        
-                        // 检查是否有新版本
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            console.log('New Service Worker found!');
-                            
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    console.log('New content is available; please refresh.');
-                                }
-                            });
-                        });
-                    })
-                    .catch(function(error) {
-                        console.log('Service Worker 注册失败: ', error);
-                    });
-                    
-                // 监听控制权变化
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (!refreshing) {
-                        refreshing = true;
-                        window.location.reload();
-                    }
-                });
-            });
-        }
         // 开始复习
         function startReview(mode) {
             appState.reviewState.mode = mode;
@@ -2245,44 +2119,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                     showToast('已退出全屏模式', 'info');
                 }
             });
-            // PWA 安装提示
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                
-                // 可以在这里显示安装按钮
-                console.log('PWA 可以安装了');
-                
-                // 可选：自动显示安装提示（在用户交互后）
-                setTimeout(() => {
-                    if (deferredPrompt) {
-                        showPWAInstallPrompt();
-                    }
-                }, 3000);
-            });
 
-            // 显示PWA安装提示
-            function showPWAInstallPrompt() {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('用户接受了PWA安装提示');
-                        } else {
-                            console.log('用户拒绝了PWA安装提示');
-                        }
-                        deferredPrompt = null;
-                    });
-                }
-            }
-
-            // 监听应用成功安装
-            window.addEventListener('appinstalled', () => {
-                console.log('PWA已成功安装');
-                deferredPrompt = null;
-                showToast('应用已成功安装到设备！', 'success');
-            });  
             // 桌面端菜单切换
             elements.desktopMenuToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -2711,6 +2548,41 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
         
         // 初始化应用
         document.addEventListener('DOMContentLoaded', initApp);
+        // 注册外部的 Service Worker
+        if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./service-worker.js')
+            .then(function(registration) {
+                console.log('Service Worker 注册成功: ', registration.scope);
+                
+                // 检查更新
+                registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                console.log('发现新的 Service Worker 版本');
+                
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('新内容已就绪，请刷新页面');
+                    // 可以在这里显示更新提示
+                    showToast('新版本可用，请刷新页面获取更新', 'info');
+                    }
+                });
+                });
+            })
+            .catch(function(error) {
+                console.log('Service Worker 注册失败: ', error);
+            });
+        });
+
+        // 监听控制权变化
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+            }
+        });
+        }
     </script>
 </body>
 </html>

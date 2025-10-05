@@ -2560,9 +2560,9 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                             
                             // 重置文件输入
                             e.target.value = '';
-                            // 添加这行：关闭对话框
-                            elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
-                            elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+                            
+                            // 添加这行：立即关闭对话框
+                            closeDialog();
                         }
                     );
                     
@@ -2575,7 +2575,13 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             };
             
             reader.readAsText(file);
-        }  
+        }
+
+        // 添加关闭对话框的辅助函数
+        function closeDialog() {
+            elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
+            elements.overlay.classList.add('opacity-0', 'pointer-events-none');
+        }
         function showConfirmDialog(title, message, confirmCallback) {
             elements.dialogTitle.textContent = title;
             elements.dialogMessage.textContent = message;
@@ -2591,15 +2597,9 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             const newConfirmBtn = elements.confirmDialog.querySelector('#dialog-confirm');
             const newCancelBtn = elements.confirmDialog.querySelector('#dialog-cancel');
             
-            // 关闭对话框的函数
-            const closeDialog = () => {
-                elements.confirmDialog.classList.add('opacity-0', 'pointer-events-none');
-                elements.overlay.classList.add('opacity-0', 'pointer-events-none');
-            };
-            
             newConfirmBtn.addEventListener('click', () => {
-                closeDialog();
-                confirmCallback();
+                closeDialog(); // 先关闭对话框
+                confirmCallback(); // 再执行回调
             });
             
             newCancelBtn.addEventListener('click', () => {
@@ -2623,7 +2623,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                     elements.confirmDialog.removeEventListener('transitionend', handler);
                 }
             });
-        }  
+        }
         // 渲染生词本
         function renderDifficultWords() {
         const difficultWordsList = elements.difficultWordsList;

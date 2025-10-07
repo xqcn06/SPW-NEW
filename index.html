@@ -2389,6 +2389,21 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
         }
         // 初始化事件监听
         function initEventListeners() {
+            // 安全检查：确保元素存在
+            const requiredElements = [
+                'expand-all', 'collapse-all', 'settings-btn', 'review-btn', 'difficult-btn',
+                'mobile-menu-toggle', 'mobile-expand-all', 'mobile-collapse-all', 
+                'mobile-review-btn', 'mobile-difficult-btn', 'mobile-settings-btn',
+                'unit-selector', 'chunk-selector', 'mobile-unit-selector', 'mobile-chunk-selector',
+                'close-settings', 'close-review', 'close-difficult',
+                'save-settings', 'start-review', 'pause-review'
+            ];
+            
+            requiredElements.forEach(id => {
+                if (!document.getElementById(id)) {
+                    console.warn(`元素 #${id} 不存在`);
+                }
+            });
             // 展开/收起所有卡片
             elements.expandAllBtn.addEventListener('click', () => {
                 document.querySelectorAll('.bg-light-card, .bg-dark-card').forEach(card => {
@@ -2758,78 +2773,18 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             }, false);
         }
         // 初始化认证事件监听
+        // 初始化认证事件监听
         function initAuthEventListeners() {
-            // 注册按钮
-            document.getElementById('signup-btn').addEventListener('click', async () => {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                
-                if (!email || !password) {
-                    showToast('请输入邮箱和密码', 'error');
-                    return;
-                }
-                
-                const result = await syncManager.signUp(email, password);
-                showToast(result.message, result.success ? 'success' : 'error');
-            });
-            
-            // 登录按钮
-            document.getElementById('login-btn').addEventListener('click', async () => {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                
-                if (!email || !password) {
-                    showToast('请输入邮箱和密码', 'error');
-                    return;
-                }
-                
-                const result = await syncManager.signIn(email, password);
-                if (result.success) {
-                    showToast(result.message, 'success');
-                    // 登录成功后加载数据
-                    setTimeout(() => {
-                        syncManager.loadAllData().then(loadResult => {
-                            if (loadResult.success) {
-                                renderVocabularyCards();
-                                updateStats();
-                                showToast('数据加载完成', 'success');
-                            }
-                        });
-                    }, 1000);
-                } else {
-                    showToast(result.message, 'error');
-                }
-            });
-            
-            // 退出按钮
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                const result = await syncManager.signOut();
-                showToast(result.message, result.success ? 'info' : 'error');
-            });
-            
             // 同步按钮
-            document.getElementById('sync-data-btn').addEventListener('click', async () => {
+            document.getElementById('sync-data-btn')?.addEventListener('click', async () => {
                 const result = await syncManager.syncAllData();
                 showToast(result.message, result.success ? 'success' : 'error');
             });
             
-            // 重置密码按钮
-            document.getElementById('reset-password-btn').addEventListener('click', async () => {
-                const email = document.getElementById('auth-email').value;
-                if (!email) {
-                    showToast('请输入邮箱地址', 'error');
-                    return;
-                }
-                
-                const result = await syncManager.resetPassword(email);
-                showToast(result.message, result.success ? 'success' : 'error');
-            });
-            
-            // 回车键登录
-            document.getElementById('auth-password').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    document.getElementById('login-btn').click();
-                }
+            // 退出按钮
+            document.getElementById('logout-btn')?.addEventListener('click', async () => {
+                const result = await syncManager.signOut();
+                showToast(result.message, result.success ? 'info' : 'error');
             });
         }
         // 添加这两个新函数到JavaScript中

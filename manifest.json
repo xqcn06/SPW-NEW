@@ -1,12 +1,12 @@
 {
   "name": "词汇学习卡片",
-  "short_name": "词汇卡片",
+  "short_name": "词汇卡片", 
   "description": "高效的英语单词学习工具，提供闪卡复习和生词管理功能",
   "start_url": "./",
   "display": "standalone",
   "theme_color": "#0047b1",
   "background_color": "#F8FAFC",
-  "orientation": "portrait",
+  "orientation": "any",
   "scope": "./",
   "lang": "zh-CN",
   "categories": ["education", "productivity"],
@@ -14,42 +14,50 @@
     {
       "src": "icons/icon-72x72.png",
       "sizes": "72x72",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-96x96.png",
+      "src": "icons/icon-96x96.png", 
       "sizes": "96x96",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png"
+      "sizes": "128x128", 
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-144x144.png",
       "sizes": "144x144",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-152x152.png",
       "sizes": "152x152",
-      "type": "image/png"
+      "type": "image/png", 
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-384x384.png",
       "sizes": "384x384",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
@@ -60,10 +68,13 @@
       "form_factor": "narrow"
     },
     {
-      "src": "screenshots/desktop-screenshot.png",
+      "src": "screenshots/desktop-screenshot.png", 
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"
     }
-  ]
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }

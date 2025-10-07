@@ -9,12 +9,27 @@
     <!-- PWA配置 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0047b1">
+    <!-- 针对 Microsoft Edge 的 PWA 支持 -->
+    <meta name="application-name" content="词汇学习卡片">
+    <meta name="msapplication-TileColor" content="#0047b1">
+    <meta name="msapplication-TileImage" content="icons/icon-144x144.png">
+    <meta name="msapplication-config" content="browserconfig.xml">
+    <meta name="msapplication-tap-highlight" content="no">
+
+    <!-- 针对平板设备的优化 -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="词汇学习卡片">
 
+    <!-- 针对触摸设备的优化 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <!-- 替换原有的内联manifest为外部引用 -->
     <link rel="manifest" href="./manifest.json">
+    <!-- 在现有的script标签之后添加 -->
+    <!-- 在现有的script标签之前添加 -->
+    <script src="./supabase-client.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- 添加PWA安装提示脚本 -->
     <script src="./pwa-install.js" defer></script>    
     <!-- Tailwind配置 -->
@@ -415,7 +430,50 @@
                 <i class="fa fa-times text-xl"></i>
             </button>
         </div>
-        
+        <!-- 在设置面板的"学习计划设置"部分之前添加 -->
+        <div>
+            <h3 class="font-semibold mb-3 text-light-text dark:text-dark-text flex items-center">
+                <i class="fa fa-user mr-2 text-primary"></i>用户账户
+            </h3>
+            <div class="space-y-3" id="auth-section">
+                <!-- 未登录状态 -->
+                <div id="logged-out-view">
+                    <div class="space-y-2">
+                        <input type="email" id="auth-email" placeholder="邮箱地址" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                        <input type="password" id="auth-password" placeholder="密码" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button id="signup-btn" class="flex-1 bg-success hover:bg-success/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                            <i class="fa fa-user-plus mr-1"></i>注册
+                        </button>
+                        <button id="login-btn" class="flex-1 bg-primary hover:bg-primary/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                            <i class="fa fa-sign-in mr-1"></i>登录
+                        </button>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <button id="reset-password-btn" class="text-light-textLight dark:text-dark-textLight hover:text-primary transition-colors duration-300 text-xs">
+                            忘记密码？
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 已登录状态 -->
+                <div id="logged-in-view" class="hidden">
+                    <div class="text-center mb-3">
+                        <p class="text-light-text dark:text-dark-text" id="user-email">用户邮箱</p>
+                        <p class="text-light-textLight dark:text-dark-textLight text-sm mt-1" id="sync-status">数据已同步</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="sync-data-btn" class="flex-1 bg-primary hover:bg-primary/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                            <i class="fa fa-refresh mr-1"></i>立即同步
+                        </button>
+                        <button id="logout-btn" class="flex-1 bg-danger hover:bg-danger/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
+                            <i class="fa fa-sign-out mr-1"></i>退出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>        
         <div class="space-y-6">
             <!-- 学习计划设置 -->
             <div>
@@ -1547,10 +1605,10 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 }
             }
             
-            saveAppState();
+            saveAppState(); // 这会自动触发同步
             renderVocabularyCards();
             updateStats();
-            updateTodayProgress(); // 确保更新显示
+            updateTodayProgress();
             showToast(`"${word}" 已标记为已掌握`, 'success');
         }
         
@@ -1559,7 +1617,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             const wordKey = `${appState.currentUnit}-${word}`;
             delete appState.masteredWords[wordKey];
             
-            saveAppState();
+            saveAppState(); // 这会自动触发同步
             renderVocabularyCards();
             updateStats();
             showToast(`"${word}" 已取消掌握标记`, 'info');
@@ -1571,7 +1629,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             appState.difficultWords[wordKey] = true;
             appState.correctCounts[wordKey] = 0;
             
-            saveAppState();
+            saveAppState(); // 这会自动触发同步
             renderVocabularyCards();
             updateStats();
             showToast(`"${word}" 已添加到生词本`, 'info');
@@ -1583,7 +1641,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             delete appState.difficultWords[wordKey];
             delete appState.correctCounts[wordKey];
             
-            saveAppState();
+            saveAppState(); // 这会自动触发同步
             renderVocabularyCards();
             updateStats();
             showToast(`"${word}" 已从生词本中移除`, 'info');
@@ -1609,7 +1667,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             updateReviewStats();
         }
         
-        // 保存应用状态到localStorage
+        // 修改saveAppState函数，添加自动同步
         function saveAppState() {
             localStorage.setItem('vocabularyAppState', JSON.stringify({
                 units: appState.units,
@@ -1624,8 +1682,21 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 currentUnit: appState.currentUnit,
                 currentChunk: appState.currentChunk
             }));
+            
+            // 如果用户已登录，自动同步到Supabase
+            if (syncManager) {
+                supabase.auth.getUser().then(({ data: { user } }) => {
+                    if (user) {
+                        // 使用setTimeout避免阻塞主线程
+                        setTimeout(() => {
+                            syncManager.syncAllData().catch(error => {
+                                console.log('自动同步失败:', error);
+                            });
+                        }, 100);
+                    }
+                });
+            }
         }
-        
         // 从localStorage加载应用状态
         function loadAppState() {
             const savedState = localStorage.getItem('vocabularyAppState');
@@ -2082,7 +2153,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             
             appState.reviewState.remainingWords.shift();
             
-            saveAppState();
+            saveAppState(); // 这会自动触发同步
             showNextReviewWord();
             updateStats();
             renderVocabularyCards();
@@ -2127,6 +2198,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             initReview();
             renderVocabularyCards();
             updateStats();
+            initSupabaseSync(); // 新增：初始化Supabase同步
             checkPWAStatus(); // 添加这行
             
             console.log('应用初始化完成');
@@ -2170,7 +2242,8 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             document.getElementById('import-data').addEventListener('click', () => {
                 document.getElementById('data-import-file').click();
             });
-            
+            // 添加认证相关事件监听
+            initAuthEventListeners();            
             document.getElementById('data-import-file').addEventListener('change', importAppData);
             // 监听全屏变化
             document.addEventListener('fullscreenchange', () => {
@@ -2290,6 +2363,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             });
             
             // 保存设置
+            // 在设置保存按钮的事件监听器中
             elements.saveSettingsBtn.addEventListener('click', () => {
                 appState.settings.autoPronounce = elements.autoPronounceCheckbox.checked;
                 appState.settings.showBasicInfo = elements.showBasicInfoCheckbox.checked;
@@ -2316,7 +2390,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 
                 calculateChunks(appState.units[appState.currentUnit] || []);
                 generateDailyPlan();
-                saveAppState();
+                saveAppState(); // 这会自动触发同步
                 renderVocabularyCards();
                 updateStats();
                 
@@ -2479,6 +2553,81 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                     elements.wordImport.dispatchEvent(event);
                 }
             }, false);
+        }
+        // 初始化认证事件监听
+        function initAuthEventListeners() {
+            // 注册按钮
+            document.getElementById('signup-btn').addEventListener('click', async () => {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+                
+                if (!email || !password) {
+                    showToast('请输入邮箱和密码', 'error');
+                    return;
+                }
+                
+                const result = await syncManager.signUp(email, password);
+                showToast(result.message, result.success ? 'success' : 'error');
+            });
+            
+            // 登录按钮
+            document.getElementById('login-btn').addEventListener('click', async () => {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+                
+                if (!email || !password) {
+                    showToast('请输入邮箱和密码', 'error');
+                    return;
+                }
+                
+                const result = await syncManager.signIn(email, password);
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    // 登录成功后加载数据
+                    setTimeout(() => {
+                        syncManager.loadAllData().then(loadResult => {
+                            if (loadResult.success) {
+                                renderVocabularyCards();
+                                updateStats();
+                                showToast('数据加载完成', 'success');
+                            }
+                        });
+                    }, 1000);
+                } else {
+                    showToast(result.message, 'error');
+                }
+            });
+            
+            // 退出按钮
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                const result = await syncManager.signOut();
+                showToast(result.message, result.success ? 'info' : 'error');
+            });
+            
+            // 同步按钮
+            document.getElementById('sync-data-btn').addEventListener('click', async () => {
+                const result = await syncManager.syncAllData();
+                showToast(result.message, result.success ? 'success' : 'error');
+            });
+            
+            // 重置密码按钮
+            document.getElementById('reset-password-btn').addEventListener('click', async () => {
+                const email = document.getElementById('auth-email').value;
+                if (!email) {
+                    showToast('请输入邮箱地址', 'error');
+                    return;
+                }
+                
+                const result = await syncManager.resetPassword(email);
+                showToast(result.message, result.success ? 'success' : 'error');
+            });
+            
+            // 回车键登录
+            document.getElementById('auth-password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('login-btn').click();
+                }
+            });
         }
         // 添加这两个新函数到JavaScript中
         function exportAppData() {
@@ -2753,21 +2902,6 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
         });
         }
         
-        // 初始化应用
-        function initApp() {
-            const initialWords = parseVocabularyData(initialRawVocabularyData);
-            appState.units[1] = initialWords;
-            
-            calculateChunks(initialWords);
-            checkDateChange();
-            loadAppState();
-            initEventListeners();
-            initReview();
-            renderVocabularyCards();
-            updateStats();
-            
-            console.log('应用初始化完成');
-        }
         
         // 初始化应用
         document.addEventListener('DOMContentLoaded', initApp);
@@ -2806,6 +2940,39 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             }
         });
         }
+    </script>
+    <script>
+    // PWA 检测和状态检查
+    function checkPWAStatus() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone === true;
+    
+    console.log('PWA 状态检查:');
+    console.log('- 独立模式:', isStandalone);
+    console.log('- User Agent:', navigator.userAgent);
+    console.log('- Service Worker 支持:', 'serviceWorker' in navigator);
+    console.log('- 缓存 API 支持:', 'caches' in window);
+    
+    if (isStandalone) {
+        console.log('✅ 应用正在以 PWA 模式运行');
+        showToast('PWA全屏模式已启用', 'success');
+    } else {
+        console.log('ℹ️ 应用正在浏览器中运行');
+        
+        // 检查是否是 Edge 并显示安装提示
+        if (navigator.userAgent.includes('Edg/')) {
+        console.log('检测到 Edge 浏览器，显示安装提示');
+        setTimeout(() => {
+            if (window.pwaInstallPrompt) {
+            window.pwaInstallPrompt.showInstallPrompt();
+            }
+        }, 5000);
+        }
+    }
+    }
+
+    // 在应用初始化时调用
+    document.addEventListener('DOMContentLoaded', checkPWAStatus);
     </script>
 </body>
 </html>

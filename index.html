@@ -2283,6 +2283,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
         }
 
         // 修改初始化函数
+        // 修改初始化函数
         function initApp() {
             const initialWords = parseVocabularyData(initialRawVocabularyData);
             appState.units[1] = initialWords;
@@ -2294,13 +2295,24 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             initReview();
             renderVocabularyCards();
             updateStats();
-            initSupabaseSync();
-            checkPWAStatus();
             
-            // 延迟初始化认证事件监听器，确保所有元素都已加载
+            // 延迟初始化Supabase，确保所有依赖已加载
             setTimeout(() => {
-                initAuthEventListeners();
-            }, 100);
+                try {
+                    initSupabaseSync();
+                } catch (error) {
+                    console.warn('Supabase同步初始化失败，使用离线模式:', error);
+                    // 创建降级的syncManager
+                    syncManager = {
+                        syncAllData: () => Promise.resolve({ success: false, message: '离线模式' }),
+                        signIn: () => Promise.resolve({ success: false, message: '离线模式' }),
+                        signUp: () => Promise.resolve({ success: false, message: '离线模式' }),
+                        signOut: () => Promise.resolve({ success: false, message: '离线模式' })
+                    };
+                }
+            }, 1000);
+            
+            checkPWAStatus();
             
             console.log('应用初始化完成');
         }

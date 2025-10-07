@@ -4,15 +4,29 @@ const SUPABASE_CONFIG = {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsd2llZ3hpbndkcmdseHVsZmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTQwNjcsImV4cCI6MjA3NTM5MDA2N30.ToMdeBiSfxG8TihDzfg-pQHjGXHrDFnzmCJP2kMBTW0'
 };
 
-// 创建Supabase客户端
-const supabase = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
-    auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        storage: localStorage
-    }
-});
+try {
+    // 创建Supabase客户端
+    const supabase = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true,
+            storage: localStorage
+        }
+    });
+} catch (error) {
+    console.error('Supabase初始化失败:', error);
+    // 提供降级方案
+    window.supabase = {
+        auth: {
+            getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+            signUp: () => Promise.resolve({ error: new Error('Supabase未初始化') }),
+            signInWithPassword: () => Promise.resolve({ error: new Error('Supabase未初始化') }),
+            signOut: () => Promise.resolve({ error: new Error('Supabase未初始化') }),
+            onAuthStateChange: () => ({ data: null, error: null })
+        }
+    };
+}
 
 // Supabase数据同步管理
 class SupabaseSyncManager {

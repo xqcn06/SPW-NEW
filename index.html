@@ -38,7 +38,22 @@
     window.supabase = null;
     window.syncManager = null;
     window.appState = null; // 确保 appState 全局可用
-
+    // 等待页面和所有脚本加载完成
+    window.addEventListener('load', function() {
+        // 延迟初始化，确保所有库都已加载
+        setTimeout(() => {
+            if (typeof initSupabaseSync === 'function') {
+                initSupabaseSync();
+            } else {
+                console.warn('initSupabaseSync 函数未找到，将在2秒后重试');
+                setTimeout(() => {
+                    if (typeof initSupabaseSync === 'function') {
+                        initSupabaseSync();
+                    }
+                }, 2000);
+            }
+        }, 1000);
+    });
     // Supabase 加载状态检查
     function checkSupabaseLoaded() {
         if (typeof supabase === 'undefined') {

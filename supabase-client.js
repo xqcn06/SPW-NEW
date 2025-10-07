@@ -1,28 +1,46 @@
-// Supabase客户端配置
+// Supabase客户端配置 - 增强版本
 const SUPABASE_CONFIG = {
     url: 'https://elwiegxinwdrglxulfcw.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsd2llZ3hpbndkcmdseHVsZmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTQwNjcsImV4cCI6MjA3NTM5MDA2N30.ToMdeBiSfxG8TihDzfg-pQHjGXHrDFnzmCJP2kMBTW0'
 };
 
+// 等待Supabase库加载的Promise
+function waitForSupabase() {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 30; // 最多尝试30次（约15秒）
+        const interval = setInterval(() => {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                clearInterval(interval);
+                resolve(window.supabase);
+            } else {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    reject(new Error('Supabase library failed to load within timeout'));
+                }
+            }
+        }, 500);
+    });
+}
+
 // 安全的Supabase初始化函数
-function initSupabase() {
+async function initSupabase() {
     try {
         console.log('开始初始化 Supabase...');
         
-        // 检查 Supabase 库是否已加载
-        if (typeof supabase === 'undefined') {
-            console.error('Supabase 库未加载，请检查 CDN 链接');
-            throw new Error('Supabase 库未加载');
-        }
+        // 等待 Supabase 库加载完成
+        const supabaseLib = await waitForSupabase();
+        console.log('Supabase 库已加载:', typeof supabaseLib);
         
         // 创建 Supabase 客户端
-        const supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+        const supabaseClient = supabaseLib.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
             auth: {
                 autoRefreshToken: true,
                 persistSession: true,
                 detectSessionInUrl: true,
                 storage: localStorage,
-                flowType: 'pkce' // 添加 PKCE 流程增强安全性
+                flowType: 'pkce'
             },
             global: {
                 headers: {
@@ -68,7 +86,6 @@ function createFallbackSupabase() {
                 error: new Error('离线模式') 
             }),
             onAuthStateChange: (callback) => {
-                // 模拟立即返回未认证状态
                 setTimeout(() => {
                     callback('SIGNED_OUT', null);
                 }, 100);
@@ -92,9 +109,36 @@ function createFallbackSupabase() {
     };
 }
 
-// 初始化 Supabase 客户端
-let supabase = initSupabase();
+// 异步初始化 Supabase 客户端
+let supabase = null;
 let syncManager = null;
+
+// 异步初始化函数
+async function initializeSupabase() {
+    try {
+        supabase = await initSupabase();
+        window.supabase = supabase;
+        console.log('Supabase 全局变量设置完成');
+        
+        // 初始化同步管理器
+        initSupabaseSync();
+        
+    } catch (error) {
+        console.error('Supabase 初始化过程失败:', error);
+        supabase = createFallbackSupabase();
+        window.supabase = supabase;
+        window.syncManager = {
+            signUp: () => Promise.resolve({ success: false, message: '初始化失败' }),
+            signIn: () => Promise.resolve({ success: false, message: '初始化失败' }),
+            signOut: () => Promise.resolve({ success: false, message: '初始化失败' }),
+            syncAllData: () => Promise.resolve({ success: false, message: '初始化失败' }),
+            loadAllData: () => Promise.resolve({ success: false, message: '初始化失败' })
+        };
+    }
+}
+
+// 立即开始初始化
+initializeSupabase();
 
 // 确保全局可用
 window.supabase = supabase;

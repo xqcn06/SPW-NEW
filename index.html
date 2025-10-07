@@ -34,9 +34,35 @@
 
     <!-- 2. 声明全局变量 -->
     <script>
-        // 声明全局变量，确保在加载其他脚本之前可用
-        window.supabase = null;
-        window.syncManager = null;
+    // 声明全局变量
+    window.supabase = null;
+    window.syncManager = null;
+    window.appState = null; // 确保 appState 全局可用
+
+    // Supabase 加载状态检查
+    function checkSupabaseLoaded() {
+        if (typeof supabase === 'undefined') {
+            console.warn('Supabase 库未加载，尝试重新加载...');
+            // 动态加载 Supabase
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            script.onload = function() {
+                console.log('Supabase 库动态加载成功');
+                // 延迟初始化
+                setTimeout(() => {
+                    if (typeof initSupabaseSync === 'function') {
+                        initSupabaseSync();
+                    }
+                }, 1000);
+            };
+            script.onerror = function() {
+                console.error('动态加载 Supabase 失败');
+            };
+            document.head.appendChild(script);
+            return false;
+        }
+        return true;
+    }
     </script>
 
     <!-- 3. 再加载您的脚本 -->
@@ -2291,7 +2317,6 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
         }
 
         // 修改初始化函数
-        // 修改 initApp 函数中的 Supabase 初始化部分
         function initApp() {
             const initialWords = parseVocabularyData(initialRawVocabularyData);
             appState.units[1] = initialWords;
@@ -2304,26 +2329,36 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             renderVocabularyCards();
             updateStats();
             
-            // 安全的Supabase初始化
+            // 确保 appState 全局可用
+            window.appState = appState;
+            
+            // 安全的 Supabase 初始化
             setTimeout(() => {
                 try {
+                    // 检查 Supabase 是否已加载
+                    if (!checkSupabaseLoaded()) {
+                        console.log('Supabase 未加载，等待动态加载...');
+                        return;
+                    }
+                    
                     if (typeof initSupabaseSync === 'function') {
                         initSupabaseSync();
-                        console.log('Supabase同步管理器初始化成功');
+                        console.log('Supabase 同步管理器初始化成功');
                     } else {
-                        throw new Error('initSupabaseSync函数未定义');
+                        console.warn('initSupabaseSync 函数未找到');
                     }
                 } catch (error) {
-                    console.warn('Supabase同步初始化失败，使用离线模式:', error);
-                    // 创建降级的syncManager
+                    console.warn('Supabase 同步初始化失败，使用离线模式:', error);
+                    // 创建降级的 syncManager
                     window.syncManager = {
                         syncAllData: () => Promise.resolve({ success: false, message: '离线模式' }),
                         signIn: () => Promise.resolve({ success: false, message: '离线模式' }),
                         signUp: () => Promise.resolve({ success: false, message: '离线模式' }),
-                        signOut: () => Promise.resolve({ success: false, message: '离线模式' })
+                        signOut: () => Promise.resolve({ success: false, message: '离线模式' }),
+                        loadAllData: () => Promise.resolve({ success: false, message: '离线模式' })
                     };
                 }
-            }, 100);
+            }, 2000); // 延长延迟时间
             
             checkPWAStatus();
             console.log('应用初始化完成');

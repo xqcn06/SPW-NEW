@@ -40,7 +40,9 @@ async function initSupabase() {
                 persistSession: true,
                 detectSessionInUrl: true,
                 storage: localStorage,
-                flowType: 'pkce'
+                flowType: 'pkce',
+                // 添加这行重定向配置
+                redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html'
             },
             global: {
                 headers: {
@@ -48,7 +50,6 @@ async function initSupabase() {
                 }
             }
         });
-        
         console.log('Supabase 初始化成功');
         return supabaseClient;
         
@@ -398,7 +399,7 @@ class SupabaseSyncManager {
             }
 
             const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-                redirectTo: window.location.origin,
+                redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html',
             });
 
             if (error) {

@@ -3,6 +3,7 @@ const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
+  './auth-callback.html',  // 新增
   './browserconfig.xml',
   './icons/icon-72x72.png',
   './icons/icon-96x96.png',

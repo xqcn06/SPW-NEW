@@ -438,29 +438,23 @@
             <div class="space-y-3" id="auth-section">
                 <!-- 未登录状态 -->
                 <div id="logged-out-view">
-                    <div class="space-y-2">
-                        <input type="email" id="auth-email" placeholder="邮箱地址" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
-                        <input type="password" id="auth-password" placeholder="密码" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300">
-                    </div>
-                    <div class="flex gap-2 mt-3">
-                        <button id="signup-btn" class="flex-1 bg-success hover:bg-success/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
-                            <i class="fa fa-user-plus mr-1"></i>注册
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="open-login-btn" class="bg-primary hover:bg-primary/90 text-white rounded-lg py-3 transition-all duration-300 font-medium touch-button">
+                            <i class="fa fa-sign-in mr-2"></i>登录
                         </button>
-                        <button id="login-btn" class="flex-1 bg-primary hover:bg-primary/90 text-white rounded-lg py-2 transition-all duration-300 text-sm touch-button">
-                            <i class="fa fa-sign-in mr-1"></i>登录
-                        </button>
-                    </div>
-                    <div class="mt-2 text-center">
-                        <button id="reset-password-btn" class="text-light-textLight dark:text-dark-textLight hover:text-primary transition-colors duration-300 text-xs">
-                            忘记密码？
+                        <button id="open-signup-btn" class="bg-success hover:bg-success/90 text-white rounded-lg py-3 transition-all duration-300 font-medium touch-button">
+                            <i class="fa fa-user-plus mr-2"></i>注册
                         </button>
                     </div>
                 </div>
                 
                 <!-- 已登录状态 -->
                 <div id="logged-in-view" class="hidden">
-                    <div class="text-center mb-3">
-                        <p class="text-light-text dark:text-dark-text" id="user-email">用户邮箱</p>
+                    <div class="text-center mb-4 p-4 bg-light-border/30 dark:bg-dark-border/30 rounded-lg">
+                        <div class="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fa fa-user text-lg"></i>
+                        </div>
+                        <p class="text-light-text dark:text-dark-text font-medium" id="user-email">用户邮箱</p>
                         <p class="text-light-textLight dark:text-dark-textLight text-sm mt-1" id="sync-status">数据已同步</p>
                     </div>
                     <div class="flex gap-2">
@@ -473,7 +467,7 @@
                     </div>
                 </div>
             </div>
-        </div>        
+        </div>  
         <div class="space-y-6">
             <!-- 学习计划设置 -->
             <div>
@@ -833,7 +827,102 @@
         </div>
     </div>
     </div>
-    
+    <!-- 登录弹窗 -->
+    <div id="login-modal" class="fixed inset-0 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/50" id="login-modal-overlay"></div>
+        <div class="relative bg-light-card dark:bg-dark-card rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-light-text dark:text-dark-text">登录账户</h3>
+                <button id="close-login-modal" class="text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 touch-button">
+                    <i class="fa fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-light-text dark:text-dark-text text-sm font-medium mb-2">邮箱地址</label>
+                    <input type="email" id="login-email" placeholder="请输入邮箱地址" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-base">
+                </div>
+                
+                <div>
+                    <label class="block text-light-text dark:text-dark-text text-sm font-medium mb-2">密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-base">
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <button id="forgot-password-btn" class="text-primary hover:text-primary/80 transition-colors duration-300 text-sm">
+                        忘记密码？
+                    </button>
+                </div>
+                
+                <button id="login-submit-btn" class="w-full bg-primary hover:bg-primary/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-md hover:shadow-lg touch-button">
+                    <i class="fa fa-sign-in mr-2"></i>登录
+                </button>
+                
+                <div class="text-center">
+                    <p class="text-light-textLight dark:text-dark-textLight text-sm">
+                        还没有账户？ 
+                        <button id="switch-to-signup" class="text-primary hover:text-primary/80 transition-colors duration-300 font-medium">
+                            立即注册
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册弹窗 -->
+    <div id="signup-modal" class="fixed inset-0 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/50" id="signup-modal-overlay"></div>
+        <div class="relative bg-light-card dark:bg-dark-card rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-light-text dark:text-dark-text">注册账户</h3>
+                <button id="close-signup-modal" class="text-light-textLight dark:text-dark-textLight hover:text-light-text dark:hover:text-dark-text transition-colors duration-300 touch-button">
+                    <i class="fa fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-light-text dark:text-dark-text text-sm font-medium mb-2">邮箱地址</label>
+                    <input type="email" id="signup-email" placeholder="请输入邮箱地址" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-base">
+                </div>
+                
+                <div>
+                    <label class="block text-light-text dark:text-dark-text text-sm font-medium mb-2">密码</label>
+                    <input type="password" id="signup-password" placeholder="请输入密码（至少6位）" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-base">
+                </div>
+                
+                <div>
+                    <label class="block text-light-text dark:text-dark-text text-sm font-medium mb-2">确认密码</label>
+                    <input type="password" id="signup-confirm-password" placeholder="请再次输入密码" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-base">
+                </div>
+                
+                <div class="flex items-start space-x-2">
+                    <input type="checkbox" id="agree-terms" class="mt-1 form-checkbox h-4 w-4 text-primary rounded transition-all duration-300">
+                    <label for="agree-terms" class="text-light-text dark:text-dark-text text-sm">
+                        我已阅读并同意
+                        <button type="button" class="text-primary hover:text-primary/80 transition-colors duration-300">用户协议</button>
+                        和
+                        <button type="button" class="text-primary hover:text-primary/80 transition-colors duration-300">隐私政策</button>
+                    </label>
+                </div>
+                
+                <button id="signup-submit-btn" class="w-full bg-success hover:bg-success/90 text-white rounded-lg py-3 transition-all duration-300 font-medium shadow-md hover:shadow-lg touch-button">
+                    <i class="fa fa-user-plus mr-2"></i>注册
+                </button>
+                
+                <div class="text-center">
+                    <p class="text-light-textLight dark:text-dark-textLight text-sm">
+                        已有账户？ 
+                        <button id="switch-to-login" class="text-primary hover:text-primary/80 transition-colors duration-300 font-medium">
+                            立即登录
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>    
     <!-- 提示对话框 -->
     <div id="confirm-dialog" class="fixed inset-0 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/50" id="dialog-overlay"></div>
@@ -2203,6 +2292,101 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             
             console.log('应用初始化完成');
         }
+        // 登录处理
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const submitBtn = document.getElementById('login-submit-btn');
+            
+            if (!email || !password) {
+                showToast('请输入邮箱和密码', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>登录中...';
+            submitBtn.disabled = true;
+            
+            const result = await syncManager.signIn(email, password);
+            
+            // 恢复按钮状态
+            submitBtn.innerHTML = '<i class="fa fa-sign-in mr-2"></i>登录';
+            submitBtn.disabled = false;
+            
+            if (result.success) {
+                closeLoginModal();
+                // 清空表单
+                document.getElementById('login-email').value = '';
+                document.getElementById('login-password').value = '';
+            } else {
+                showToast(result.message, 'error');
+            }
+        }
+
+        // 注册处理
+        async function handleSignup() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            const agreeTerms = document.getElementById('agree-terms').checked;
+            const submitBtn = document.getElementById('signup-submit-btn');
+            
+            if (!email || !password || !confirmPassword) {
+                showToast('请填写所有必填字段', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('密码至少需要6位', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showToast('两次输入的密码不一致', 'error');
+                return;
+            }
+            
+            if (!agreeTerms) {
+                showToast('请同意用户协议和隐私政策', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>注册中...';
+            submitBtn.disabled = true;
+            
+            const result = await syncManager.signUp(email, password);
+            
+            // 恢复按钮状态
+            submitBtn.innerHTML = '<i class="fa fa-user-plus mr-2"></i>注册';
+            submitBtn.disabled = false;
+            
+            if (result.success) {
+                closeSignupModal();
+                // 清空表单
+                document.getElementById('signup-email').value = '';
+                document.getElementById('signup-password').value = '';
+                document.getElementById('signup-confirm-password').value = '';
+                document.getElementById('agree-terms').checked = false;
+                
+                showToast(result.message, 'success');
+            } else {
+                showToast(result.message, 'error');
+            }
+        }
+
+        // 忘记密码处理
+        async function handleForgotPassword() {
+            const email = document.getElementById('login-email').value;
+            
+            if (!email) {
+                showToast('请输入邮箱地址', 'error');
+                return;
+            }
+            
+            const result = await syncManager.resetPassword(email);
+            showToast(result.message, result.success ? 'success' : 'error');
+        }
         // 初始化事件监听
         function initEventListeners() {
             // 展开/收起所有卡片
@@ -2361,7 +2545,26 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 closeDialog(); // 使用全局函数
                 elements.desktopNavMenu.classList.add('hidden');
             });
-            
+            // 登录注册弹窗事件
+            document.getElementById('open-login-btn').addEventListener('click', showLoginModal);
+            document.getElementById('open-signup-btn').addEventListener('click', showSignupModal);
+
+            // 登录弹窗内事件
+            document.getElementById('login-submit-btn').addEventListener('click', handleLogin);
+            document.getElementById('switch-to-signup').addEventListener('click', switchToSignup);
+            document.getElementById('forgot-password-btn').addEventListener('click', handleForgotPassword);
+
+            // 注册弹窗内事件
+            document.getElementById('signup-submit-btn').addEventListener('click', handleSignup);
+            document.getElementById('switch-to-login').addEventListener('click', switchToLogin);
+
+            // 回车键支持
+            document.getElementById('login-password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLogin();
+            });
+            document.getElementById('signup-confirm-password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSignup();
+            });            
             // 保存设置
             // 在设置保存按钮的事件监听器中
             elements.saveSettingsBtn.addEventListener('click', () => {

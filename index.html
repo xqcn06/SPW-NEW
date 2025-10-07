@@ -29,7 +29,7 @@
     <!-- 在现有的script标签之后添加 -->
     <!-- 在现有的script标签之前添加 -->
     <!-- 1. 先加载外部库 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- 2. 声明全局变量 -->
@@ -47,18 +47,25 @@
     }
 
     // 2. 修复 safeSupabaseInit 函数（正确初始化 supabase 实例）
-    // 简化的 Supabase 初始化函数
     function safeSupabaseInit() {
         try {
-            // 直接初始化同步管理器
-            if (typeof initSupabaseSync === 'function') {
-                // 给 supabase-client.js 一点时间加载
-                setTimeout(initSupabaseSync, 500);
-                console.log('开始初始化 Supabase 同步管理器...');
-            } else {
-                console.warn('initSupabaseSync 函数未找到，等待重试...');
+            // 确保 Supabase 库已加载（使用补全的 checkSupabaseLoaded 函数）
+            if (!checkSupabaseLoaded()) {
+                console.warn('Supabase 库未完全加载，等待重试...');
                 setTimeout(safeSupabaseInit, 1000);
+                return;
             }
+            
+            // 延迟初始化同步管理器（确保 supabase-client.js 已加载）
+            setTimeout(() => {
+                if (typeof initSupabaseSync === 'function') {
+                    initSupabaseSync();
+                    console.log('Supabase 同步管理器初始化成功');
+                } else {
+                    console.warn('initSupabaseSync 函数未找到，检查 supabase-client.js 是否正确加载');
+                }
+            }, 1500);  // 缩短延迟，提高初始化效率
+            
         } catch (error) {
             console.error('Supabase 初始化失败:', error);
         }
@@ -2385,7 +2392,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             checkPWAStatus();
             console.log('应用初始化完成');
         }
-        // 登录处理
+        // 增强的登录处理
         async function handleLogin() {
             // 在函数开始添加检查
             if (!window.syncManager) {
@@ -2393,34 +2400,69 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                 return;
             }
             
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
             const submitBtn = document.getElementById('login-submit-btn');
-            if (!email || !password) {
-                showToast('请输入邮箱和密码', 'error');
+            
+            // 增强的输入验证
+            if (!email) {
+                showToast('请输入邮箱地址', 'error');
+                document.getElementById('login-email').focus();
                 return;
             }
             
+            if (!this.isValidEmail(email)) {
+                showToast('请输入有效的邮箱地址', 'error');
+                document.getElementById('login-email').focus();
+                return;
+            }
+            
+            if (!password) {
+                showToast('请输入密码', 'error');
+                document.getElementById('login-password').focus();
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('密码至少需要6位', 'error');
+                document.getElementById('login-password').focus();
+                return;
+            }
+
             // 显示加载状态
+            const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>登录中...';
             submitBtn.disabled = true;
-            
-            const result = await window.syncManager.signIn(email, password);
-            
-            // 恢复按钮状态
-            submitBtn.innerHTML = '<i class="fa fa-sign-in mr-2"></i>登录';
-            submitBtn.disabled = false;
-            
-            if (result.success) {
-                closeLoginModal();
-                // 清空表单
-                document.getElementById('login-email').value = '';
-                document.getElementById('login-password').value = '';
-            } else {
-                showToast(result.message, 'error');
+
+            try {
+                const result = await window.syncManager.signIn(email, password);
+                
+                if (result.success) {
+                    closeLoginModal();
+                    // 清空表单
+                    document.getElementById('login-email').value = '';
+                    document.getElementById('login-password').value = '';
+                } else {
+                    showToast(result.message, 'error');
+                }
+            } catch (error) {
+                console.error('登录过程异常:', error);
+                showToast('登录过程中出现错误，请重试', 'error');
+            } finally {
+                // 恢复按钮状态
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         }
 
+        // 邮箱验证辅助函数
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // 在全局作用域添加这个函数
+        window.isValidEmail = isValidEmail;
         // 注册处理
         async function handleSignup() {
             // 在函数开始添加检查

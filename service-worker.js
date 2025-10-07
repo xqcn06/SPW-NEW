@@ -1,9 +1,9 @@
-const CACHE_NAME = 'vocabulary-card-v5.2.3-edge';
+const CACHE_NAME = 'vocabulary-card-v5.2.4-edge';
 const urlsToCache = [
   './',
   './index.html',
+  './auth-callback.html',
   './manifest.json',
-  './auth-callback.html',  // 新增
   './browserconfig.xml',
   './icons/icon-72x72.png',
   './icons/icon-96x96.png',
@@ -12,23 +12,20 @@ const urlsToCache = [
   './icons/icon-152x152.png',
   './icons/icon-192x192.png',
   './icons/icon-384x384.png',
-  './icons/icon-512x512.png',
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+  './icons/icon-512x512.png'
 ];
 
 // 安装 Service Worker
 self.addEventListener('install', function(event) {
-  console.log('Service Worker 安装中... (Edge 兼容版本)');
+  console.log('Service Worker 安装中... (版本: ' + CACHE_NAME + ')');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function(cache) {
-        console.log('缓存已打开，开始缓存资源');
-        return cache.addAll(urlsToCache);
+        console.log('缓存已打开，开始缓存关键资源');
+        return cache.addAll(urlsToCache.map(url => new Request(url, {cache: 'reload'})));
       })
       .then(() => {
-        console.log('所有资源已缓存完成');
+        console.log('关键资源缓存完成');
         return self.skipWaiting();
       })
       .catch(error => {
@@ -37,13 +34,14 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// 激活 Service Worker - 增强 Edge 兼容性
+// 增强的激活处理
 self.addEventListener('activate', function(event) {
   console.log('Service Worker 激活中...');
   event.waitUntil(
     caches.keys().then(function(cacheNames) {
       return Promise.all(
         cacheNames.map(function(cacheName) {
+          // 删除所有旧版本的缓存
           if (cacheName !== CACHE_NAME) {
             console.log('删除旧缓存:', cacheName);
             return caches.delete(cacheName);
@@ -52,7 +50,7 @@ self.addEventListener('activate', function(event) {
       );
     }).then(() => {
       console.log('Service Worker 已激活并准备就绪');
-      // 在 Edge 中立即接管控制
+      // 立即接管所有客户端
       return self.clients.claim();
     })
   );

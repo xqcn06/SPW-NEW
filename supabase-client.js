@@ -1,11 +1,60 @@
 // supabase-client.js - 修复版本
 console.log('开始加载增强版 Supabase 客户端...');
 
-// 检查全局 Supabase 是否已定义
-if (typeof window.supabase === 'undefined') {
-    console.warn('全局 window.supabase 未定义，等待初始化...');
+// 全局状态追踪
+window.__SUPABASE_LOAD_STATE = window.__SUPABASE_LOAD_STATE || {
+    initialized: false,
+    pending: [],
+    client: null
+};
+
+// 等待 Supabase 完全加载的辅助函数
+function waitForSupabaseLoad() {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 50; // 最多等待5秒
+        
+        const check = () => {
+            attempts++;
+            
+            if (typeof window.supabase !== 'undefined' && 
+                typeof window.supabase.createClient === 'function') {
+                console.log('✅ Supabase 库已加载');
+                resolve();
+                return;
+            }
+            
+            if (attempts >= maxAttempts) {
+                reject(new Error('Supabase 库加载超时'));
+                return;
+            }
+            
+            setTimeout(check, 100);
+        };
+        
+        check();
+    });
 }
 
+// 安全的客户端获取函数
+async function getSupabaseClient() {
+    if (window.__SUPABASE_LOAD_STATE.initialized && window.__SUPABASE_LOAD_STATE.client) {
+        return window.__SUPABASE_LOAD_STATE.client;
+    }
+    
+    if (!window.__SUPABASE_LOAD_STATE.initialized) {
+        return new Promise((resolve, reject) => {
+            window.__SUPABASE_LOAD_STATE.pending.push({ resolve, reject });
+            
+            // 设置超时
+            setTimeout(() => {
+                reject(new Error('Supabase 初始化超时'));
+            }, 10000);
+        });
+    }
+    
+    throw new Error('Supabase 客户端未正确初始化');
+}
 // Supabase 配置
 const SUPABASE_CONFIG = {
     url: 'https://elwiegxinwdrglxulfcw.supabase.co',
@@ -25,38 +74,56 @@ class SupabaseManager {
 
     async init() {
         try {
+            // 防止重复初始化
+            if (window.__SUPABASE_LOAD_STATE.initialized) {
+                this.client = window.__SUPABASE_LOAD_STATE.client;
+                this.isInitialized = true;
+                console.log('✅ 使用已初始化的 Supabase 客户端');
+                return;
+            }
+
             console.log('开始初始化 Supabase...');
             
-            // 等待 Supabase 库加载
-            await this.waitForSupabase();
+            await waitForSupabaseLoad();
             
-            console.log('创建新的 Supabase 客户端');
-            // 创建客户端并赋值给全局变量
-            this.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: true,
-                    storage: localStorage,
-                    flowType: 'pkce',
-                    redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html'
+            // 创建客户端
+            this.client = window.supabase.createClient(
+                SUPABASE_CONFIG.url, 
+                SUPABASE_CONFIG.anonKey, 
+                {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true,
+                        storage: localStorage,
+                        flowType: 'pkce',
+                        redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html'
+                    }
                 }
-            });
-            
-            // 同时赋值给全局变量，供其他部分使用
-            window.supabase = this.client;
+            );
 
             // 测试连接
             await this.testConnection();
             
             this.isInitialized = true;
+            window.__SUPABASE_LOAD_STATE.initialized = true;
+            window.__SUPABASE_LOAD_STATE.client = this.client;
+            
+            // 解析所有等待的 promise
+            window.__SUPABASE_LOAD_STATE.pending.forEach(({ resolve }) => resolve(this.client));
+            window.__SUPABASE_LOAD_STATE.pending = [];
+            
             console.log('✅ Supabase 初始化成功');
             
         } catch (error) {
             console.error('❌ Supabase 初始化失败:', error);
+            
+            // 拒绝所有等待的 promise
+            window.__SUPABASE_LOAD_STATE.pending.forEach(({ reject }) => reject(error));
+            window.__SUPABASE_LOAD_STATE.pending = [];
+            
             this.client = this.createFallbackClient();
-            // 降级模式也赋值给全局变量
-            window.supabase = this.client;
+            window.__SUPABASE_LOAD_STATE.client = this.client;
         }
     }
 
@@ -161,42 +228,13 @@ class DataSyncManager {
     }
 
     async initialize() {
-        try {
-            console.log('数据同步管理器开始初始化...');
-            
-            // 等待 SupabaseManager 初始化完成
-            let attempts = 0;
-            while (!this.supabaseManager.isReady() && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                attempts++;
-                console.log(`等待 Supabase 初始化... (${attempts}/10)`);
-            }
-            
-            if (!this.supabaseManager.isReady()) {
-                throw new Error('Supabase 初始化超时');
-            }
-            
-            this.supabase = this.supabaseManager.getClient();
-            
-            // 验证客户端
-            if (!this.supabase || !this.supabase.auth) {
-                throw new Error('Supabase 客户端无效');
-            }
-            
-            console.log('✅ 数据同步管理器初始化完成');
-            
-            // 初始化认证监听
-            await this.initAuthListener();
-            
-            // 检查现有会话
-            await this.checkExistingSession();
-            
-        } catch (error) {
-            console.error('数据同步管理器初始化失败:', error);
-            // 创建降级客户端
-            this.supabase = this.supabaseManager.createFallbackClient();
-            window.supabase = this.supabase;
-        }
+        this.supabase = this.supabaseManager.getClient();
+        
+        // 初始化认证监听
+        await this.initAuthListener();
+        
+        // 检查现有会话
+        await this.checkExistingSession();
     }
 
     async initAuthListener() {

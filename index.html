@@ -34,93 +34,177 @@
 
     <!-- 2. 声明全局变量 -->
     <script>
-    // 声明全局变量
-    window.supabase = null;
-    window.syncManager = null;
-    window.appState = null;
+        // 声明全局变量
+        window.supabase = null;
+        window.syncManager = null;
+        window.appState = null;
 
-    // 安全的 Supabase 初始化函数
-    // 1. 新增 checkSupabaseLoaded 函数定义（补全未定义的函数）
-    function checkSupabaseLoaded() {
-        return typeof window.supabase !== 'undefined' && 
-            typeof window.supabase.createClient === 'function';
-    }
-
-    // 2. 修复 safeSupabaseInit 函数（正确初始化 supabase 实例）
-    function safeSupabaseInit() {
-        try {
-            // 确保 Supabase 库已加载（使用补全的 checkSupabaseLoaded 函数）
-            if (!checkSupabaseLoaded()) {
-                console.warn('Supabase 库未完全加载，等待重试...');
-                setTimeout(safeSupabaseInit, 1000);
-                return;
-            }
+        // 增强的 Supabase 初始化函数
+        function initializeSupabaseWithRetry(maxRetries = 5, retryDelay = 1000) {
+            let attempts = 0;
             
-            // 延迟初始化同步管理器（确保 supabase-client.js 已加载）
-            setTimeout(() => {
-                if (typeof initSupabaseSync === 'function') {
-                    initSupabaseSync();
-                    console.log('Supabase 同步管理器初始化成功');
-                } else {
-                    console.warn('initSupabaseSync 函数未找到，检查 supabase-client.js 是否正确加载');
+            const tryInitialize = () => {
+                attempts++;
+                console.log(`尝试初始化 Supabase (${attempts}/${maxRetries})...`);
+                
+                // 检查1: Supabase JS 库是否已加载
+                if (typeof supabase === 'undefined') {
+                    console.warn('Supabase JS 库未定义');
+                    if (attempts < maxRetries) {
+                        console.log(`${retryDelay}ms后重试...`);
+                        setTimeout(tryInitialize, retryDelay);
+                    } else {
+                        console.error('Supabase JS 库加载失败，达到最大重试次数');
+                        createFallbackSyncManager();
+                    }
+                    return;
                 }
-            }, 1500);  // 缩短延迟，提高初始化效率
-            
-        } catch (error) {
-            console.error('Supabase 初始化失败:', error);
-        }
-    }
-
-    // 3. 页面加载完成后初始化（保持不变，确保依赖库加载顺序）
-    window.addEventListener('load', function() {
-        setTimeout(safeSupabaseInit, 1000);
-    });
-    </script>
-
-    <!-- 3. 再加载您的脚本 -->
-    <script src="./supabase-client.js"></script>
-    <script src="./pwa-install.js"></script>  
-   
-    <!-- 添加PWA安装提示脚本 -->
-   
-    <!-- Tailwind配置 -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#0047b1ff',
-                        secondary: '#EC4899',
-                        success: '#10B981',
-                        danger: '#EF4444',
-                        warning: '#F59E0B',
-                        light: {
-                            bg: '#F8FAFC',
-                            card: '#FFFFFF',
-                            text: '#1E293B',
-                            textLight: '#64748B',
-                            border: '#E2E8F0'
-                        },
-                        dark: {
-                            bg: '#0F172A',
-                            card: '#1E293B',
-                            cardHover: '#334155',
-                            text: '#F8FAFC',
-                            textLight: '#94A3B8',
-                            border: '#334155'
+                
+                // 检查2: createClient 方法是否可用
+                if (typeof supabase.createClient !== 'function') {
+                    console.warn('supabase.createClient 不是函数');
+                    if (attempts < maxRetries) {
+                        console.log(`${retryDelay}ms后重试...`);
+                        setTimeout(tryInitialize, retryDelay);
+                    } else {
+                        console.error('supabase.createClient 不可用，达到最大重试次数');
+                        createFallbackSyncManager();
+                    }
+                    return;
+                }
+                
+                try {
+                    // 创建 Supabase 客户端实例
+                    window.supabase = supabase.createClient(
+                        'https://elwiegxinwdrglxulfcw.supabase.co',
+                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsd2llZ3hpbndkcmdseHVsZmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTQwNjcsImV4cCI6MjA3NTM5MDA2N30.ToMdeBiSfxG8TihDzfg-pQHjGXHrDFnzmCJP2kMBTW0',
+                        {
+                            auth: {
+                                autoRefreshToken: true,
+                                persistSession: true,
+                                detectSessionInUrl: true,
+                                storage: localStorage,
+                                flowType: 'pkce'
+                            }
                         }
-                    },
-                    fontFamily: {
-                        inter: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+                    );
+                    
+                    console.log('✅ Supabase 客户端初始化成功');
+                    
+                    // 初始化同步管理器
+                    initializeSyncManager();
+                    
+                } catch (error) {
+                    console.error('创建 Supabase 客户端时捕获异常:', error);
+                    if (attempts < maxRetries) {
+                        console.log(`${retryDelay}ms后重试...`);
+                        setTimeout(tryInitialize, retryDelay);
+                    } else {
+                        createFallbackSyncManager();
                     }
                 }
+            };
+            
+            tryInitialize();
+        }
+
+        // 初始化同步管理器
+        function initializeSyncManager() {
+            // 等待 supabase-client.js 加载
+            if (typeof initSupabaseSync === 'function') {
+                console.log('初始化 Supabase 同步管理器...');
+                initSupabaseSync();
+            } else {
+                // 如果 supabase-client.js 未加载，设置一个延迟重试
+                console.warn('initSupabaseSync 函数未就绪，等待 supabase-client.js 加载...');
+                setTimeout(() => {
+                    if (typeof initSupabaseSync === 'function') {
+                        initSupabaseSync();
+                    } else {
+                        console.warn('无法初始化同步管理器，创建基础管理器');
+                        createBasicSyncManager();
+                    }
+                }, 2000);
             }
         }
+
+        // 创建基础同步管理器 (降级方案)
+        function createBasicSyncManager() {
+            window.syncManager = {
+                signUp: (email, password) => Promise.resolve({ 
+                    success: false, 
+                    message: '系统初始化中，请稍后重试' 
+                }),
+                signIn: (email, password) => Promise.resolve({ 
+                    success: false, 
+                    message: '系统初始化中，请稍后重试' 
+                }),
+                signOut: () => Promise.resolve({ 
+                    success: false, 
+                    message: '系统初始化中，请稍后重试' 
+                }),
+                resetPassword: (email) => Promise.resolve({ 
+                    success: false, 
+                    message: '系统初始化中，请稍后重试' 
+                }),
+                syncAllData: () => Promise.resolve({ 
+                    success: false, 
+                    message: '系统初始化中，请稍后重试' 
+                }),
+                loadAllData: () => Promise.resolve({ 
+                    success: false, 
+                    message: '系统初始化中，请稍后重试' 
+                })
+            };
+            console.log('基础同步管理器已创建');
+        }
+
+        // 创建离线同步管理器 (最终备选)
+        function createFallbackSyncManager() {
+            window.syncManager = {
+                signUp: (email, password) => Promise.resolve({ 
+                    success: false, 
+                    message: '离线模式，无法注册' 
+                }),
+                signIn: (email, password) => Promise.resolve({ 
+                    success: false, 
+                    message: '离线模式，无法登录' 
+                }),
+                signOut: () => Promise.resolve({ 
+                    success: true, 
+                    message: '离线模式' 
+                }),
+                resetPassword: (email) => Promise.resolve({ 
+                    success: false, 
+                    message: '离线模式，无法重置密码' 
+                }),
+                syncAllData: () => Promise.resolve({ 
+                    success: false, 
+                    message: '离线模式' 
+                }),
+                loadAllData: () => Promise.resolve({ 
+                    success: false, 
+                    message: '离线模式' 
+                })
+            };
+            console.log('降级同步管理器已创建（离线模式）');
+        }
+
+        // 页面加载完成后开始初始化
+        window.addEventListener('load', function() {
+            console.log('页面加载完成，开始初始化应用...');
+            
+            // 先初始化应用核心功能
+            if (typeof initApp === 'function') {
+                initApp();
+            }
+            
+            // 延迟初始化 Supabase（确保 CDN 已加载）
+            console.log('开始延迟初始化 Supabase...');
+            setTimeout(() => {
+                initializeSupabaseWithRetry();
+            }, 1000);
+        });
     </script>
     
     <style type="text/tailwindcss">

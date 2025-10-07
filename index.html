@@ -29,7 +29,7 @@
     <!-- 在现有的script标签之后添加 -->
     <!-- 在现有的script标签之前添加 -->
     <!-- 1. 先加载外部库 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- 2. 声明全局变量 -->
@@ -47,25 +47,18 @@
     }
 
     // 2. 修复 safeSupabaseInit 函数（正确初始化 supabase 实例）
+    // 简化的 Supabase 初始化函数
     function safeSupabaseInit() {
         try {
-            // 确保 Supabase 库已加载（使用补全的 checkSupabaseLoaded 函数）
-            if (!checkSupabaseLoaded()) {
-                console.warn('Supabase 库未完全加载，等待重试...');
+            // 直接初始化同步管理器
+            if (typeof initSupabaseSync === 'function') {
+                // 给 supabase-client.js 一点时间加载
+                setTimeout(initSupabaseSync, 500);
+                console.log('开始初始化 Supabase 同步管理器...');
+            } else {
+                console.warn('initSupabaseSync 函数未找到，等待重试...');
                 setTimeout(safeSupabaseInit, 1000);
-                return;
             }
-            
-            // 延迟初始化同步管理器（确保 supabase-client.js 已加载）
-            setTimeout(() => {
-                if (typeof initSupabaseSync === 'function') {
-                    initSupabaseSync();
-                    console.log('Supabase 同步管理器初始化成功');
-                } else {
-                    console.warn('initSupabaseSync 函数未找到，检查 supabase-client.js 是否正确加载');
-                }
-            }, 1500);  // 缩短延迟，提高初始化效率
-            
         } catch (error) {
             console.error('Supabase 初始化失败:', error);
         }

@@ -1,11 +1,17 @@
 // supabase-client.js - 修复版本
 console.log('开始加载增强版 Supabase 客户端...');
 
+// 检查全局 Supabase 是否已定义
+if (typeof window.supabase === 'undefined') {
+    console.warn('全局 window.supabase 未定义，等待初始化...');
+}
+
 // Supabase 配置
 const SUPABASE_CONFIG = {
     url: 'https://elwiegxinwdrglxulfcw.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsd2llZ3hpbndkcmdseHVsZmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTQwNjcsImV4cCI6MjA3NTM5MDA2N30.ToMdeBiSfxG8TihDzfg-pQHjGXHrDFnzmCJP2kMBTW0'
 };
+
 
 // 增强的 Supabase 初始化
 class SupabaseManager {
@@ -24,7 +30,8 @@ class SupabaseManager {
             // 等待 Supabase 库加载
             await this.waitForSupabase();
             
-            // 创建客户端
+            console.log('创建新的 Supabase 客户端');
+            // 创建客户端并赋值给全局变量
             this.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
                 auth: {
                     autoRefreshToken: true,
@@ -35,6 +42,9 @@ class SupabaseManager {
                     redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html'
                 }
             });
+            
+            // 同时赋值给全局变量，供其他部分使用
+            window.supabase = this.client;
 
             // 测试连接
             await this.testConnection();
@@ -45,6 +55,8 @@ class SupabaseManager {
         } catch (error) {
             console.error('❌ Supabase 初始化失败:', error);
             this.client = this.createFallbackClient();
+            // 降级模式也赋值给全局变量
+            window.supabase = this.client;
         }
     }
 
@@ -149,13 +161,42 @@ class DataSyncManager {
     }
 
     async initialize() {
-        this.supabase = this.supabaseManager.getClient();
-        
-        // 初始化认证监听
-        await this.initAuthListener();
-        
-        // 检查现有会话
-        await this.checkExistingSession();
+        try {
+            console.log('数据同步管理器开始初始化...');
+            
+            // 等待 SupabaseManager 初始化完成
+            let attempts = 0;
+            while (!this.supabaseManager.isReady() && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+                console.log(`等待 Supabase 初始化... (${attempts}/10)`);
+            }
+            
+            if (!this.supabaseManager.isReady()) {
+                throw new Error('Supabase 初始化超时');
+            }
+            
+            this.supabase = this.supabaseManager.getClient();
+            
+            // 验证客户端
+            if (!this.supabase || !this.supabase.auth) {
+                throw new Error('Supabase 客户端无效');
+            }
+            
+            console.log('✅ 数据同步管理器初始化完成');
+            
+            // 初始化认证监听
+            await this.initAuthListener();
+            
+            // 检查现有会话
+            await this.checkExistingSession();
+            
+        } catch (error) {
+            console.error('数据同步管理器初始化失败:', error);
+            // 创建降级客户端
+            this.supabase = this.supabaseManager.createFallbackClient();
+            window.supabase = this.supabase;
+        }
     }
 
     async initAuthListener() {

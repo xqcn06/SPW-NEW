@@ -1,3 +1,6 @@
+// 在文件顶部添加全局变量声明
+let supabase;
+let syncManager;
 // Supabase客户端配置
 const SUPABASE_CONFIG = {
     url: 'https://elwiegxinwdrglxulfcw.supabase.co',
@@ -5,8 +8,8 @@ const SUPABASE_CONFIG = {
 };
 
 try {
-    // 创建Supabase客户端
-    const supabase = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+    // 创建Supabase客户端 - 移除 const 改为赋值给全局变量
+    supabase = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
         auth: {
             autoRefreshToken: true,
             persistSession: true,
@@ -14,10 +17,13 @@ try {
             storage: localStorage
         }
     });
+    
+    // 确保全局可用
+    window.supabase = supabase;
 } catch (error) {
     console.error('Supabase初始化失败:', error);
     // 提供降级方案
-    window.supabase = {
+    supabase = {
         auth: {
             getSession: () => Promise.resolve({ data: { session: null }, error: null }),
             signUp: () => Promise.resolve({ error: new Error('Supabase未初始化') }),
@@ -26,6 +32,7 @@ try {
             onAuthStateChange: () => ({ data: null, error: null })
         }
     };
+    window.supabase = supabase;
 }
 
 // Supabase数据同步管理
@@ -655,12 +662,12 @@ class SupabaseSyncManager {
     }
 }
 
-// 创建全局同步管理器实例
-let syncManager;
 
-// 初始化同步管理器
+
+// 修改初始化同步管理器函数
 function initSupabaseSync() {
     syncManager = new SupabaseSyncManager();
+    window.syncManager = syncManager; // 确保全局可用
 }
 
 // 弹窗管理函数

@@ -2283,7 +2283,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
         }
 
         // 修改初始化函数
-        // 修改初始化函数
+        // 修改 initApp 函数中的 Supabase 初始化部分
         function initApp() {
             const initialWords = parseVocabularyData(initialRawVocabularyData);
             appState.units[1] = initialWords;
@@ -2296,32 +2296,36 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             renderVocabularyCards();
             updateStats();
             
-            // 延迟初始化Supabase，确保所有依赖已加载
-            setTimeout(() => {
-                try {
-                    initSupabaseSync();
-                } catch (error) {
-                    console.warn('Supabase同步初始化失败，使用离线模式:', error);
-                    // 创建降级的syncManager
-                    syncManager = {
-                        syncAllData: () => Promise.resolve({ success: false, message: '离线模式' }),
-                        signIn: () => Promise.resolve({ success: false, message: '离线模式' }),
-                        signUp: () => Promise.resolve({ success: false, message: '离线模式' }),
-                        signOut: () => Promise.resolve({ success: false, message: '离线模式' })
-                    };
-                }
-            }, 1000);
+            // 立即初始化 Supabase，不使用 setTimeout
+            try {
+                initSupabaseSync();
+                console.log('Supabase同步管理器初始化成功');
+            } catch (error) {
+                console.warn('Supabase同步初始化失败，使用离线模式:', error);
+                // 创建降级的syncManager
+                syncManager = {
+                    syncAllData: () => Promise.resolve({ success: false, message: '离线模式' }),
+                    signIn: () => Promise.resolve({ success: false, message: '离线模式' }),
+                    signUp: () => Promise.resolve({ success: false, message: '离线模式' }),
+                    signOut: () => Promise.resolve({ success: false, message: '离线模式' })
+                };
+                window.syncManager = syncManager;
+            }
             
             checkPWAStatus();
-            
             console.log('应用初始化完成');
         }
         // 登录处理
         async function handleLogin() {
+            // 在函数开始添加检查
+            if (!window.syncManager) {
+                showToast('系统正在初始化，请稍后重试', 'error');
+                return;
+            }
+            
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             const submitBtn = document.getElementById('login-submit-btn');
-            
             if (!email || !password) {
                 showToast('请输入邮箱和密码', 'error');
                 return;
@@ -2331,7 +2335,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>登录中...';
             submitBtn.disabled = true;
             
-            const result = await syncManager.signIn(email, password);
+            const result = await window.syncManager.signIn(email, password);
             
             // 恢复按钮状态
             submitBtn.innerHTML = '<i class="fa fa-sign-in mr-2"></i>登录';
@@ -2349,12 +2353,17 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
 
         // 注册处理
         async function handleSignup() {
+            // 在函数开始添加检查
+            if (!window.syncManager) {
+                showToast('系统正在初始化，请稍后重试', 'error');
+                return;
+            }
+            
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
             const agreeTerms = document.getElementById('agree-terms').checked;
             const submitBtn = document.getElementById('signup-submit-btn');
-            
             if (!email || !password || !confirmPassword) {
                 showToast('请填写所有必填字段', 'error');
                 return;
@@ -2379,7 +2388,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>注册中...';
             submitBtn.disabled = true;
             
-            const result = await syncManager.signUp(email, password);
+            const result = await window.syncManager.signUp(email, password);
             
             // 恢复按钮状态
             submitBtn.innerHTML = '<i class="fa fa-user-plus mr-2"></i>注册';
@@ -2811,17 +2820,29 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             if (signupBtn) {
                 signupBtn.addEventListener('click', showSignupModal);
             }
+            // 修改同步按钮事件
             if (syncBtn) {
                 syncBtn.addEventListener('click', async () => {
-                    const result = await syncManager.syncAllData();
+                    if (!window.syncManager) {
+                        showToast('系统未初始化', 'error');
+                        return;
+                    }
+                    const result = await window.syncManager.syncAllData();
                     showToast(result.message, result.success ? 'success' : 'error');
                 });
             }
+
+            // 修改退出按钮事件
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', async () => {
-                    const result = await syncManager.signOut();
+                    if (!window.syncManager) {
+                        showToast('系统未初始化', 'error');
+                        return;
+                    }
+                    const result = await window.syncManager.signOut();
                     showToast(result.message, result.success ? 'info' : 'error');
                 });
+
             }
 
             // 登录弹窗内事件

@@ -31,9 +31,17 @@
     <!-- 1. 先加载外部库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 2. 再加载您的脚本 -->
+
+    <!-- 2. 声明全局变量 -->
+    <script>
+        // 声明全局变量，确保在加载其他脚本之前可用
+        window.supabase = null;
+        window.syncManager = null;
+    </script>
+
+    <!-- 3. 再加载您的脚本 -->
     <script src="./supabase-client.js"></script>
-    <script src="./pwa-install.js"></script>        
+    <script src="./pwa-install.js"></script>     
    
     <!-- 添加PWA安装提示脚本 -->
    
@@ -2296,21 +2304,26 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             renderVocabularyCards();
             updateStats();
             
-            // 立即初始化 Supabase，不使用 setTimeout
-            try {
-                initSupabaseSync();
-                console.log('Supabase同步管理器初始化成功');
-            } catch (error) {
-                console.warn('Supabase同步初始化失败，使用离线模式:', error);
-                // 创建降级的syncManager
-                syncManager = {
-                    syncAllData: () => Promise.resolve({ success: false, message: '离线模式' }),
-                    signIn: () => Promise.resolve({ success: false, message: '离线模式' }),
-                    signUp: () => Promise.resolve({ success: false, message: '离线模式' }),
-                    signOut: () => Promise.resolve({ success: false, message: '离线模式' })
-                };
-                window.syncManager = syncManager;
-            }
+            // 安全的Supabase初始化
+            setTimeout(() => {
+                try {
+                    if (typeof initSupabaseSync === 'function') {
+                        initSupabaseSync();
+                        console.log('Supabase同步管理器初始化成功');
+                    } else {
+                        throw new Error('initSupabaseSync函数未定义');
+                    }
+                } catch (error) {
+                    console.warn('Supabase同步初始化失败，使用离线模式:', error);
+                    // 创建降级的syncManager
+                    window.syncManager = {
+                        syncAllData: () => Promise.resolve({ success: false, message: '离线模式' }),
+                        signIn: () => Promise.resolve({ success: false, message: '离线模式' }),
+                        signUp: () => Promise.resolve({ success: false, message: '离线模式' }),
+                        signOut: () => Promise.resolve({ success: false, message: '离线模式' })
+                    };
+                }
+            }, 100);
             
             checkPWAStatus();
             console.log('应用初始化完成');

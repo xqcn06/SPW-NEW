@@ -1,4 +1,4 @@
-// supabase-client.js - 完全重写版本
+// supabase-client.js - 修复版本
 console.log('开始加载增强版 Supabase 客户端...');
 
 // Supabase 配置
@@ -21,13 +21,11 @@ class SupabaseManager {
         try {
             console.log('开始初始化 Supabase...');
             
-            // 检查 Supabase 库是否加载
-            if (typeof createClient === 'undefined') {
-                await this.loadSupabaseLibrary();
-            }
+            // 等待 Supabase 库加载
+            await this.waitForSupabase();
             
             // 创建客户端
-            this.client = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+            this.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
                 auth: {
                     autoRefreshToken: true,
                     persistSession: true,
@@ -35,14 +33,6 @@ class SupabaseManager {
                     storage: localStorage,
                     flowType: 'pkce',
                     redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html'
-                },
-                db: {
-                    schema: 'public'
-                },
-                realtime: {
-                    params: {
-                        eventsPerSecond: 10
-                    }
                 }
             });
 
@@ -52,41 +42,43 @@ class SupabaseManager {
             this.isInitialized = true;
             console.log('✅ Supabase 初始化成功');
             
-            // 设置全局变量
-            window.supabase = this.client;
-            
         } catch (error) {
             console.error('❌ Supabase 初始化失败:', error);
             this.client = this.createFallbackClient();
-            window.supabase = this.client;
         }
     }
 
-    async loadSupabaseLibrary() {
+    async waitForSupabase() {
         return new Promise((resolve, reject) => {
-            if (typeof createClient !== 'undefined') {
-                resolve();
-                return;
-            }
-
-            console.log('动态加载 Supabase 库...');
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-            script.onload = () => {
-                console.log('Supabase 库加载成功');
-                resolve();
+            let attempts = 0;
+            const maxAttempts = 50; // 最多等待5秒
+            
+            const checkSupabase = () => {
+                attempts++;
+                
+                if (typeof window.supabase !== 'undefined' && 
+                    typeof window.supabase.createClient === 'function') {
+                    console.log('Supabase 库已加载');
+                    resolve();
+                    return;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    reject(new Error('Supabase 库加载超时'));
+                    return;
+                }
+                
+                setTimeout(checkSupabase, 100);
             };
-            script.onerror = () => {
-                console.error('Supabase 库加载失败');
-                reject(new Error('无法加载 Supabase 库'));
-            };
-            document.head.appendChild(script);
+            
+            checkSupabase();
         });
     }
 
     async testConnection() {
         try {
-            const { data, error } = await this.client.from('user_profiles').select('count').limit(1);
+            // 简单的连接测试
+            const { data, error } = await this.client.auth.getSession();
             if (error) throw error;
             console.log('✅ Supabase 连接测试成功');
         } catch (error) {
@@ -105,7 +97,6 @@ class SupabaseManager {
                 signInWithPassword: () => Promise.resolve({ data: null, error: new Error('离线模式') }),
                 signOut: () => Promise.resolve({ error: new Error('离线模式') }),
                 onAuthStateChange: (callback) => {
-                    // 模拟认证状态变化
                     setTimeout(() => callback('SIGNED_OUT', null), 100);
                     return { data: { subscription: { unsubscribe: () => {} } } };
                 },
@@ -123,9 +114,6 @@ class SupabaseManager {
                 insert: () => Promise.resolve({ error: new Error('离线模式') }),
                 update: () => Promise.resolve({ error: new Error('离线模式') }),
                 delete: () => Promise.resolve({ error: new Error('离线模式') })
-            }),
-            channel: () => ({
-                on: () => ({ subscribe: () => {} })
             })
         };
     }
@@ -138,6 +126,7 @@ class SupabaseManager {
         return this.isInitialized && this.client !== null;
     }
 }
+
 
 // 完整的数据同步管理器
 class DataSyncManager {
@@ -156,7 +145,7 @@ class DataSyncManager {
         window.addEventListener('offline', () => this.handleOffline());
         
         // 延迟初始化
-        setTimeout(() => this.initialize(), 1000);
+        setTimeout(() => this.initialize(), 2000);
     }
 
     async initialize() {
@@ -1031,23 +1020,116 @@ function initSupabaseSync() {
     }
 }
 
-// 弹窗管理函数（保持不变）
+// 弹窗管理函数
 function showLoginModal() {
-    // ... 保持原有实现
+    try {
+        const modal = document.getElementById('login-modal');
+        const overlay = document.getElementById('login-modal-overlay');
+        
+        if (!modal || !overlay) {
+            console.warn('登录弹窗元素未找到');
+            return;
+        }
+        
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100', 'pointer-events-auto');
+        setTimeout(() => {
+            const scaleElement = modal.querySelector('.scale-95');
+            if (scaleElement) {
+                scaleElement.classList.remove('scale-95');
+                scaleElement.classList.add('scale-100');
+            }
+        }, 10);
+        
+        // 添加关闭事件
+        overlay.onclick = closeLoginModal;
+        const closeBtn = document.getElementById('close-login-modal');
+        if (closeBtn) {
+            closeBtn.onclick = closeLoginModal;
+        }
+    } catch (error) {
+        console.error('显示登录弹窗失败:', error);
+    }
 }
 
 function closeLoginModal() {
-    // ... 保持原有实现
+    try {
+        const modal = document.getElementById('login-modal');
+        if (!modal) {
+            console.warn('登录弹窗元素未找到');
+            return;
+        }
+        
+        const scaleElement = modal.querySelector('.scale-100');
+        if (scaleElement) {
+            scaleElement.classList.remove('scale-100');
+            scaleElement.classList.add('scale-95');
+        }
+        
+        setTimeout(() => {
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }, 300);
+    } catch (error) {
+        console.error('关闭登录弹窗失败:', error);
+    }
 }
 
 function showSignupModal() {
-    // ... 保持原有实现
+    try {
+        const modal = document.getElementById('signup-modal');
+        const overlay = document.getElementById('signup-modal-overlay');
+        
+        if (!modal || !overlay) {
+            console.warn('注册弹窗元素未找到');
+            return;
+        }
+        
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100', 'pointer-events-auto');
+        setTimeout(() => {
+            const scaleElement = modal.querySelector('.scale-95');
+            if (scaleElement) {
+                scaleElement.classList.remove('scale-95');
+                scaleElement.classList.add('scale-100');
+            }
+        }, 10);
+        
+        // 添加关闭事件
+        overlay.onclick = closeSignupModal;
+        const closeBtn = document.getElementById('close-signup-modal');
+        if (closeBtn) {
+            closeBtn.onclick = closeSignupModal;
+        }
+    } catch (error) {
+        console.error('显示注册弹窗失败:', error);
+    }
 }
 
 function closeSignupModal() {
-    // ... 保持原有实现
+    try {
+        const modal = document.getElementById('signup-modal');
+        if (!modal) {
+            console.warn('注册弹窗元素未找到');
+            return;
+        }
+        
+        const scaleElement = modal.querySelector('.scale-100');
+        if (scaleElement) {
+            scaleElement.classList.remove('scale-100');
+            scaleElement.classList.add('scale-95');
+        }
+        
+        setTimeout(() => {
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }, 300);
+    } catch (error) {
+        console.error('关闭注册弹窗失败:', error);
+    }
 }
 
+// 切换弹窗
 function switchToSignup() {
     closeLoginModal();
     setTimeout(showSignupModal, 300);

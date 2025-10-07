@@ -60,6 +60,29 @@ class SupabaseSyncManager {
         });
     }
 
+    // 更新认证UI - 添加安全检查
+    updateAuthUI(user) {
+        const loggedOutView = document.getElementById('logged-out-view');
+        const loggedInView = document.getElementById('logged-in-view');
+        const userEmail = document.getElementById('user-email');
+
+        if (!loggedOutView || !loggedInView || !userEmail) {
+            console.warn('认证UI元素未找到');
+            return;
+        }
+
+        if (user) {
+            loggedOutView.classList.add('hidden');
+            loggedInView.classList.remove('hidden');
+            userEmail.textContent = user.email;
+            this.updateSyncStatus('已连接');
+        } else {
+            loggedOutView.classList.remove('hidden');
+            loggedInView.classList.add('hidden');
+            this.updateSyncStatus('未登录');
+        }
+    }
+
     // 更新认证UI
     updateAuthUI(user) {
         const loggedOutView = document.getElementById('logged-out-view');
@@ -631,22 +654,42 @@ function showLoginModal() {
     const modal = document.getElementById('login-modal');
     const overlay = document.getElementById('login-modal-overlay');
     
+    if (!modal || !overlay) {
+        console.warn('登录弹窗元素未找到');
+        return;
+    }
+    
     modal.classList.remove('opacity-0', 'pointer-events-none');
     modal.classList.add('opacity-100', 'pointer-events-auto');
     setTimeout(() => {
-        modal.querySelector('.scale-95').classList.remove('scale-95');
-        modal.querySelector('.scale-95').classList.add('scale-100');
+        const scaleElement = modal.querySelector('.scale-95');
+        if (scaleElement) {
+            scaleElement.classList.remove('scale-95');
+            scaleElement.classList.add('scale-100');
+        }
     }, 10);
     
     // 添加关闭事件
     overlay.onclick = closeLoginModal;
-    document.getElementById('close-login-modal').onclick = closeLoginModal;
+    const closeBtn = document.getElementById('close-login-modal');
+    if (closeBtn) {
+        closeBtn.onclick = closeLoginModal;
+    }
 }
 
 function closeLoginModal() {
     const modal = document.getElementById('login-modal');
-    modal.querySelector('.scale-100').classList.remove('scale-100');
-    modal.querySelector('.scale-100').classList.add('scale-95');
+    if (!modal) {
+        console.warn('登录弹窗元素未找到');
+        return;
+    }
+    
+    const scaleElement = modal.querySelector('.scale-100');
+    if (scaleElement) {
+        scaleElement.classList.remove('scale-100');
+        scaleElement.classList.add('scale-95');
+    }
+    
     setTimeout(() => {
         modal.classList.remove('opacity-100', 'pointer-events-auto');
         modal.classList.add('opacity-0', 'pointer-events-none');
@@ -657,22 +700,42 @@ function showSignupModal() {
     const modal = document.getElementById('signup-modal');
     const overlay = document.getElementById('signup-modal-overlay');
     
+    if (!modal || !overlay) {
+        console.warn('注册弹窗元素未找到');
+        return;
+    }
+    
     modal.classList.remove('opacity-0', 'pointer-events-none');
     modal.classList.add('opacity-100', 'pointer-events-auto');
     setTimeout(() => {
-        modal.querySelector('.scale-95').classList.remove('scale-95');
-        modal.querySelector('.scale-95').classList.add('scale-100');
+        const scaleElement = modal.querySelector('.scale-95');
+        if (scaleElement) {
+            scaleElement.classList.remove('scale-95');
+            scaleElement.classList.add('scale-100');
+        }
     }, 10);
     
     // 添加关闭事件
     overlay.onclick = closeSignupModal;
-    document.getElementById('close-signup-modal').onclick = closeSignupModal;
+    const closeBtn = document.getElementById('close-signup-modal');
+    if (closeBtn) {
+        closeBtn.onclick = closeSignupModal;
+    }
 }
 
 function closeSignupModal() {
     const modal = document.getElementById('signup-modal');
-    modal.querySelector('.scale-100').classList.remove('scale-100');
-    modal.querySelector('.scale-100').classList.add('scale-95');
+    if (!modal) {
+        console.warn('注册弹窗元素未找到');
+        return;
+    }
+    
+    const scaleElement = modal.querySelector('.scale-100');
+    if (scaleElement) {
+        scaleElement.classList.remove('scale-100');
+        scaleElement.classList.add('scale-95');
+    }
+    
     setTimeout(() => {
         modal.classList.remove('opacity-100', 'pointer-events-auto');
         modal.classList.add('opacity-0', 'pointer-events-none');

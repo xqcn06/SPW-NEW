@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>词汇学习卡片</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+   
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <!-- PWA配置 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -28,10 +28,15 @@
     <link rel="manifest" href="./manifest.json">
     <!-- 在现有的script标签之后添加 -->
     <!-- 在现有的script标签之前添加 -->
-    <script src="./supabase-client.js"></script>
+    <!-- 1. 先加载外部库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. 再加载您的脚本 -->
+    <script src="./supabase-client.js"></script>
+    <script src="./pwa-install.js"></script>        
+   
     <!-- 添加PWA安装提示脚本 -->
-    <script src="./pwa-install.js" defer></script>    
+   
     <!-- Tailwind配置 -->
     <script>
         tailwind.config = {
@@ -1015,7 +1020,8 @@
             </div>
         </div>
     </footer>
-    
+
+
     <script>
         // 应用状态管理
         const appState = {
@@ -2275,7 +2281,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             }
         }
 
-        // 在 initApp 函数中调用
+        // 修改初始化函数
         function initApp() {
             const initialWords = parseVocabularyData(initialRawVocabularyData);
             appState.units[1] = initialWords;
@@ -2287,8 +2293,13 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             initReview();
             renderVocabularyCards();
             updateStats();
-            initSupabaseSync(); // 新增：初始化Supabase同步
-            checkPWAStatus(); // 添加这行
+            initSupabaseSync();
+            checkPWAStatus();
+            
+            // 延迟初始化认证事件监听器，确保所有元素都已加载
+            setTimeout(() => {
+                initAuthEventListeners();
+            }, 100);
             
             console.log('应用初始化完成');
         }
@@ -2775,17 +2786,56 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
         // 初始化认证事件监听
         // 初始化认证事件监听
         function initAuthEventListeners() {
-            // 同步按钮
-            document.getElementById('sync-data-btn')?.addEventListener('click', async () => {
-                const result = await syncManager.syncAllData();
-                showToast(result.message, result.success ? 'success' : 'error');
-            });
-            
-            // 退出按钮
-            document.getElementById('logout-btn')?.addEventListener('click', async () => {
-                const result = await syncManager.signOut();
-                showToast(result.message, result.success ? 'info' : 'error');
-            });
+            // 安全检查：确保元素存在
+            const loginBtn = document.getElementById('open-login-btn');
+            const signupBtn = document.getElementById('open-signup-btn');
+            const syncBtn = document.getElementById('sync-data-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (loginBtn) {
+                loginBtn.addEventListener('click', showLoginModal);
+            }
+            if (signupBtn) {
+                signupBtn.addEventListener('click', showSignupModal);
+            }
+            if (syncBtn) {
+                syncBtn.addEventListener('click', async () => {
+                    const result = await syncManager.syncAllData();
+                    showToast(result.message, result.success ? 'success' : 'error');
+                });
+            }
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    const result = await syncManager.signOut();
+                    showToast(result.message, result.success ? 'info' : 'error');
+                });
+            }
+
+            // 登录弹窗内事件
+            const loginSubmitBtn = document.getElementById('login-submit-btn');
+            const switchToSignupBtn = document.getElementById('switch-to-signup');
+            const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+
+            if (loginSubmitBtn) {
+                loginSubmitBtn.addEventListener('click', handleLogin);
+            }
+            if (switchToSignupBtn) {
+                switchToSignupBtn.addEventListener('click', switchToSignup);
+            }
+            if (forgotPasswordBtn) {
+                forgotPasswordBtn.addEventListener('click', handleForgotPassword);
+            }
+
+            // 注册弹窗内事件
+            const signupSubmitBtn = document.getElementById('signup-submit-btn');
+            const switchToLoginBtn = document.getElementById('switch-to-login');
+
+            if (signupSubmitBtn) {
+                signupSubmitBtn.addEventListener('click', handleSignup);
+            }
+            if (switchToLoginBtn) {
+                switchToLoginBtn.addEventListener('click', switchToLogin);
+            }
         }
         // 添加这两个新函数到JavaScript中
         function exportAppData() {
@@ -3133,4 +3183,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
     document.addEventListener('DOMContentLoaded', checkPWAStatus);
     </script>
 </body>
+
+ 
+
 </html>

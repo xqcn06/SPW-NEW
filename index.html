@@ -903,13 +903,14 @@
                     <input type="password" id="signup-confirm-password" placeholder="请再次输入密码" class="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-base">
                 </div>
                 
+                <!-- 找到注册弹窗中的用户协议和隐私政策按钮，修改为： -->
                 <div class="flex items-start space-x-2">
                     <input type="checkbox" id="agree-terms" class="mt-1 form-checkbox h-4 w-4 text-primary rounded transition-all duration-300">
                     <label for="agree-terms" class="text-light-text dark:text-dark-text text-sm">
                         我已阅读并同意
-                        <button type="button" class="text-primary hover:text-primary/80 transition-colors duration-300">用户协议</button>
+                        <button type="button" id="signup-user-agreement-btn" class="text-primary hover:text-primary/80 transition-colors duration-300">用户协议</button>
                         和
-                        <button type="button" class="text-primary hover:text-primary/80 transition-colors duration-300">隐私政策</button>
+                        <button type="button" id="signup-privacy-policy-btn" class="text-primary hover:text-primary/80 transition-colors duration-300">隐私政策</button>
                     </label>
                 </div>
                 
@@ -2836,6 +2837,25 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             if (switchToLoginBtn) {
                 switchToLoginBtn.addEventListener('click', switchToLogin);
             }
+
+            // 注册弹窗内的用户协议和隐私政策按钮
+            document.getElementById('signup-user-agreement-btn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSignupModal();
+                setTimeout(() => {
+                    elements.userAgreementPanel.classList.remove('translate-x-full');
+                    elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+                }, 300);
+            });
+
+            document.getElementById('signup-privacy-policy-btn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSignupModal();
+                setTimeout(() => {
+                    elements.privacyPolicyPanel.classList.remove('translate-x-full');
+                    elements.overlay.classList.remove('opacity-0', 'pointer-events-none');
+                }, 300);
+            });
         }
         // 添加这两个新函数到JavaScript中
         function exportAppData() {

@@ -40,34 +40,39 @@
     window.appState = null;
 
     // 安全的 Supabase 初始化函数
+    // 1. 新增 checkSupabaseLoaded 函数定义（补全未定义的函数）
+    function checkSupabaseLoaded() {
+        return typeof window.supabase !== 'undefined' && 
+            typeof window.supabase.createClient === 'function';
+    }
+
+    // 2. 修复 safeSupabaseInit 函数（正确初始化 supabase 实例）
     function safeSupabaseInit() {
         try {
-            // 确保 Supabase 库已加载
-            if (typeof supabase === 'undefined' || typeof supabase.createClient === 'undefined') {
+            // 确保 Supabase 库已加载（使用补全的 checkSupabaseLoaded 函数）
+            if (!checkSupabaseLoaded()) {
                 console.warn('Supabase 库未完全加载，等待重试...');
                 setTimeout(safeSupabaseInit, 1000);
                 return;
             }
             
-            // 设置全局 supabase 实例
-            window.supabase = supabase;
-            
-            // 延迟初始化同步管理器
+            // 延迟初始化同步管理器（确保 supabase-client.js 已加载）
             setTimeout(() => {
                 if (typeof initSupabaseSync === 'function') {
                     initSupabaseSync();
                     console.log('Supabase 同步管理器初始化成功');
+                } else {
+                    console.warn('initSupabaseSync 函数未找到，检查 supabase-client.js 是否正确加载');
                 }
-            }, 2000);
+            }, 1500);  // 缩短延迟，提高初始化效率
             
         } catch (error) {
             console.error('Supabase 初始化失败:', error);
         }
     }
 
-    // 页面加载完成后初始化
+    // 3. 页面加载完成后初始化（保持不变，确保依赖库加载顺序）
     window.addEventListener('load', function() {
-        // 延迟初始化 Supabase
         setTimeout(safeSupabaseInit, 1000);
     });
     </script>
@@ -2339,12 +2344,29 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
             // 确保 appState 全局可用
             window.appState = appState;
             
-            // 安全的 Supabase 初始化
+            // 安全的 Supabase 初始化（使用补全的 checkSupabaseLoaded 函数）
             setTimeout(() => {
                 try {
-                    // 检查 Supabase 是否已加载
+                    // 检查 Supabase 是否已加载（修复未定义函数问题）
                     if (!checkSupabaseLoaded()) {
                         console.log('Supabase 未加载，等待动态加载...');
+                        // 重试机制：3秒后再次检查
+                        setTimeout(() => {
+                            if (checkSupabaseLoaded() && typeof initSupabaseSync === 'function') {
+                                initSupabaseSync();
+                                console.log('Supabase 同步管理器延迟初始化成功');
+                            } else {
+                                console.warn('Supabase 仍未加载，使用离线模式');
+                                // 创建降级的 syncManager，避免后续代码报错
+                                window.syncManager = {
+                                    syncAllData: () => Promise.resolve({ success: false, message: '离线模式' }),
+                                    signIn: () => Promise.resolve({ success: false, message: '离线模式' }),
+                                    signUp: () => Promise.resolve({ success: false, message: '离线模式' }),
+                                    signOut: () => Promise.resolve({ success: false, message: '离线模式' }),
+                                    loadAllData: () => Promise.resolve({ success: false, message: '离线模式' })
+                                };
+                            }
+                        }, 3000);
                         return;
                     }
                     
@@ -2352,7 +2374,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                         initSupabaseSync();
                         console.log('Supabase 同步管理器初始化成功');
                     } else {
-                        console.warn('initSupabaseSync 函数未找到');
+                        console.warn('initSupabaseSync 函数未找到，检查 supabase-client.js 加载顺序');
                     }
                 } catch (error) {
                     console.warn('Supabase 同步初始化失败，使用离线模式:', error);
@@ -2365,7 +2387,7 @@ tolerance /ˈtɒlərəns/ n. 宽容`;
                         loadAllData: () => Promise.resolve({ success: false, message: '离线模式' })
                     };
                 }
-            }, 2000); // 延长延迟时间
+            }, 2000);
             
             checkPWAStatus();
             console.log('应用初始化完成');

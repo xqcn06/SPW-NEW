@@ -1,62 +1,73 @@
+// 在文件开头添加更安全的初始化检查
+console.log('开始加载 Supabase 客户端...');
 // Supabase客户端配置 - 增强版本
 const SUPABASE_CONFIG = {
     url: 'https://elwiegxinwdrglxulfcw.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsd2llZ3hpbndkcmdseHVsZmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTQwNjcsImV4cCI6MjA3NTM5MDA2N30.ToMdeBiSfxG8TihDzfg-pQHjGXHrDFnzmCJP2kMBTW0'
 };
 
-// 等待Supabase库加载的Promise
+// 增强的等待函数
 function waitForSupabase() {
     return new Promise((resolve, reject) => {
         let attempts = 0;
-        const maxAttempts = 30; // 最多尝试30次（约15秒）
+        const maxAttempts = 50; // 增加尝试次数
         const interval = setInterval(() => {
-            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            // 更严格的检查
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
                 clearInterval(interval);
+                console.log('Supabase 库已确认加载');
                 resolve(window.supabase);
+            } else if (typeof createClient !== 'undefined') {
+                // 检查全局 createClient 函数
+                clearInterval(interval);
+                console.log('使用全局 createClient 函数');
+                resolve({ createClient });
             } else {
                 attempts++;
                 if (attempts >= maxAttempts) {
                     clearInterval(interval);
-                    reject(new Error('Supabase library failed to load within timeout'));
+                    reject(new Error(`Supabase 库加载超时。当前 window.supabase: ${typeof window.supabase}`));
                 }
             }
-        }, 500);
+        }, 300);
     });
 }
 
-// 安全的Supabase初始化函数
+// 修改初始化函数
 async function initSupabase() {
     try {
-        console.log('开始初始化 Supabase...');
+        console.log('开始初始化 Supabase 客户端...');
         
-        // 等待 Supabase 库加载完成
+        // 先检查是否已经存在
+        if (window.supabase && window.supabase.auth) {
+            console.log('使用已存在的 Supabase 实例');
+            return window.supabase;
+        }
+        
         const supabaseLib = await waitForSupabase();
-        console.log('Supabase 库已加载:', typeof supabaseLib);
+        console.log('Supabase 库对象:', supabaseLib);
         
-        // 创建 Supabase 客户端
-        const supabaseClient = supabaseLib.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true,
-                storage: localStorage,
-                flowType: 'pkce',
-                // 添加这行重定向配置
-                redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html'
-            },
-            global: {
-                headers: {
-                    'X-Client-Info': 'vocabulary-app'
+        // 使用正确的 URL（SPM-NEW）
+        const supabaseClient = supabaseLib.createClient(
+            SUPABASE_CONFIG.url, 
+            SUPABASE_CONFIG.anonKey, 
+            {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true,
+                    storage: localStorage,
+                    flowType: 'pkce',
+                    redirectTo: 'https://xqcn06.github.io/SPW-NEW/auth-callback.html' // 修正 URL
                 }
             }
-        });
-        console.log('Supabase 初始化成功');
+        );
+        
+        console.log('Supabase 客户端创建成功');
         return supabaseClient;
         
     } catch (error) {
         console.error('Supabase 初始化失败:', error);
-        
-        // 提供完整的降级方案
         return createFallbackSupabase();
     }
 }

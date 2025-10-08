@@ -1,0 +1,19 @@
+# _config.yml
+title: 词汇学习卡片
+description: 高效的英语单词学习工具
+theme: jekyll-theme-cayman
+
+# 确保HTML文件被正确处理
+include: ['.html']
+
+# 构建设置
+markdown: kramdown
+plugins:
+  - jekyll-sitemap
+
+# 多页面支持
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"

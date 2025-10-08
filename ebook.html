@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>词汇学习卡片 - 电子书模式</title>
+    
+    <!-- 样式和脚本依赖 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* 电子书专用样式 */
+        .ebook-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        
+        .ebook-page {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .ebook-page:hover {
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .word-column {
+            border-right: 2px dashed #cbd5e0;
+        }
+        
+        .floating-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+        }
+        
+        .floating-controls:hover .control-buttons {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .control-buttons {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .bookmark-indicator {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .progress-tracker {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            z-index: 90;
+        }
+        
+        /* 暗黑模式支持 */
+        .dark .ebook-page {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+        
+        .dark .word-column {
+            border-right-color: #475569;
+        }
+        
+        /* 打印样式 */
+        @media print {
+            .floating-controls,
+            .progress-tracker {
+                display: none !important;
+            }
+            
+            .ebook-page {
+                box-shadow: none !important;
+                background: white !important;
+            }
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0047b1',
+                        secondary: '#EC4899',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- 顶部简约导航 -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm py-3 px-4 mb-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button onclick="window.location.href='index.html'" 
+                        class="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    <span>返回主页</span>
+                </button>
+                <h1 class="text-xl font-bold text-gray-800 dark:text-white">电子书模式</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 学习状态指示器 -->
+                <div id="learning-stats" class="text-sm text-gray-600 dark:text-gray-300">
+                    <span id="current-position">单元 1 - 页 1</span>
+                </div>
+                
+                <!-- 主题切换 -->
+                <button id="theme-toggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    <i class="fa fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 电子书主体内容 -->
+    <main class="ebook-container px-4 pb-20">
+        <!-- 单词显示区域 -->
+        <div id="ebook-content" class="space-y-6">
+            <!-- 页面将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 加载状态 -->
+        <div id="loading-state" class="text-center py-12">
+            <i class="fa fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+            <p class="text-gray-600 dark:text-gray-300">加载电子书中...</p>
+        </div>
+        
+        <!-- 空状态 -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <i class="fa fa-book text-4xl text-gray-400 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">暂无单词数据</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">请先在主页面导入单词数据</p>
+            <button onclick="window.location.href='index.html'" 
+                    class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-colors">
+                前往主页面
+            </button>
+        </div>
+    </main>
+
+    <!-- 浮动控制面板 -->
+    <div class="floating-controls">
+        <!-- 主控制按钮 -->
+        <div class="relative">
+            <button id="main-control-btn" 
+                    class="w-14 h-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110">
+                <i class="fa fa-book text-xl"></i>
+            </button>
+            
+            <!-- 书签指示器 -->
+            <div id="bookmark-indicator" class="bookmark-indicator hidden">
+                <i class="fa fa-bookmark"></i>
+            </div>
+        </div>
+        
+        <!-- 控制按钮组 -->
+        <div class="control-buttons space-y-3 mt-4">
+            <!-- 页面跳转 -->
+            <button id="page-jump-btn" 
+                    class="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                <i class="fa fa-exchange"></i>
+            </button>
+            
+            <!-- 书签管理 -->
+            <button id="bookmark-btn" 
+                    class="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                <i class="fa fa-bookmark"></i>
+            </button>
+            
+            <!-- 发音开关 -->
+            <button id="pronounce-toggle" 
+                    class="w-12 h-12 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                <i class="fa fa-volume-up"></i>
+            </button>
+            
+            <!-- 全屏模式 -->
+            <button id="fullscreen-btn" 
+                    class="w-12 h-12 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                <i class="fa fa-expand"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 进度跟踪器 -->
+    <div class="progress-tracker hidden md:block">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3">
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">阅读进度</div>
+            <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                    <span>当前单元</span>
+                    <span id="progress-unit">1</span>
+                </div>
+                <div class="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-primary transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面跳转弹窗 -->
+    <div id="page-jump-modal" class="fixed inset-0 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/50" id="jump-modal-overlay"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white">页面跳转</h3>
+                <button id="close-jump-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    <i class="fa fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择单元</label>
+                    <select id="jump-unit-select" class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <!-- 单元选项将通过JavaScript动态生成 -->
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择块</label>
+                    <select id="jump-chunk-select" class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <!-- 块选项将通过JavaScript动态生成 -->
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">跳转到页面</label>
+                    <input type="number" id="jump-page-input" min="1" value="1" 
+                           class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+                
+                <button id="confirm-jump" class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-colors">
+                    <i class="fa fa-rocket mr-2"></i>立即跳转
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 书签管理弹窗 -->
+    <div id="bookmark-modal" class="fixed inset-0 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/50" id="bookmark-modal-overlay"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white">书签管理</h3>
+                <button id="close-bookmark-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    <i class="fa fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="bookmark-list" class="max-h-64 overflow-y-auto space-y-2 mb-4">
+                <!-- 书签列表将通过JavaScript动态生成 -->
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <i class="fa fa-bookmark-o text-3xl mb-3 opacity-50"></i>
+                    <p>暂无书签</p>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3">
+                <button id="add-bookmark" class="flex-1 bg-primary hover:bg-primary/90 text-white py-2 rounded-lg transition-colors">
+                    <i class="fa fa-plus mr-2"></i>添加书签
+                </button>
+                <button id="clear-bookmarks" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
+                    <i class="fa fa-trash mr-2"></i>清空全部
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script>
+        // 电子书应用状态
+        const ebookState = {
+            currentUnit: 1,
+            currentChunk: 1,
+            currentPage: 1,
+            units: {},
+            bookmarks: [],
+            settings: {
+                autoPronounce: true,
+                darkMode: false,
+                wordsPerPage: 1 // 每页显示单词数，可以调整为多个
+            },
+            // 从主页面同步的学习状态
+            masteredWords: {},
+            difficultWords: {},
+            correctCounts: {}
+        };
+
+        // 初始化电子书
+        document.addEventListener('DOMContentLoaded', function() {
+            initEbook();
+            initEventListeners();
+            loadEbookData();
+        });
+
+        // 初始化电子书
+        function initEbook() {
+            console.log('初始化电子书模式...');
+            
+            // 检查主题
+            const savedTheme = localStorage.getItem('ebook-theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                ebookState.settings.darkMode = true;
+            }
+            
+            // 加载书签
+            loadBookmarks();
+        }
+
+        // 初始化事件监听
+        function initEventListeners() {
+            // 主题切换
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            
+            // 控制按钮
+            document.getElementById('page-jump-btn').addEventListener('click', showPageJumpModal);
+            document.getElementById('bookmark-btn').addEventListener('click', showBookmarkModal);
+            document.getElementById('pronounce-toggle').addEventListener('click', toggleAutoPronounce);
+            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+            
+            // 弹窗关闭
+            document.getElementById('close-jump-modal').addEventListener('click', closePageJumpModal);
+            document.getElementById('close-bookmark-modal').addEventListener('click', closeBookmarkModal);
+            document.getElementById('jump-modal-overlay').addEventListener('click', closePageJumpModal);
+            document.getElementById('bookmark-modal-overlay').addEventListener('click', closeBookmarkModal);
+            
+            // 页面跳转
+            document.getElementById('confirm-jump').addEventListener('click', handlePageJump);
+            document.getElementById('jump-unit-select').addEventListener('change', updateChunkOptions);
+            
+            // 书签管理
+            document.getElementById('add-bookmark').addEventListener('click', addCurrentBookmark);
+            document.getElementById('clear-bookmarks').addEventListener('click', clearAllBookmarks);
+            
+            // 键盘导航
+            document.addEventListener('keydown', handleKeyboardNavigation);
+        }
+
+        // 加载电子书数据
+        function loadEbookData() {
+            try {
+                // 从localStorage加载主页面数据
+                const mainAppData = localStorage.getItem('vocabularyAppState');
+                if (mainAppData) {
+                    const parsedData = JSON.parse(mainAppData);
+                    
+                    // 同步数据
+                    ebookState.units = parsedData.units || {};
+                    ebookState.masteredWords = parsedData.masteredWords || {};
+                    ebookState.difficultWords = parsedData.difficultWords || {};
+                    ebookState.correctCounts = parsedData.correctCounts || {};
+                    
+                    // 更新当前单元和块
+                    ebookState.currentUnit = parsedData.currentUnit || 1;
+                    ebookState.currentChunk = parsedData.currentChunk || 1;
+                    
+                    console.log('数据同步成功:', Object.keys(ebookState.units).length + '个单元');
+                }
+                
+                // 渲染电子书内容
+                renderEbookContent();
+                
+            } catch (error) {
+                console.error('加载电子书数据失败:', error);
+                showEmptyState();
+            }
+        }
+
+        // 渲染电子书内容
+        function renderEbookContent() {
+            const container = document.getElementById('ebook-content');
+            const loadingState = document.getElementById('loading-state');
+            const emptyState = document.getElementById('empty-state');
+            
+            // 隐藏加载状态
+            loadingState.classList.add('hidden');
+            
+            const currentUnitWords = ebookState.units[ebookState.currentUnit];
+            if (!currentUnitWords || currentUnitWords.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            // 获取当前块的单词
+            const chunkWords = getCurrentChunkWords();
+            if (chunkWords.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 根据每页单词数分页
+            const wordsPerPage = ebookState.settings.wordsPerPage;
+            const totalPages = Math.ceil(chunkWords.length / wordsPerPage);
+            
+            // 确保当前页面在有效范围内
+            ebookState.currentPage = Math.max(1, Math.min(ebookState.currentPage, totalPages));
+            
+            // 渲染当前页的单词
+            const startIndex = (ebookState.currentPage - 1) * wordsPerPage;
+            const endIndex = Math.min(startIndex + wordsPerPage, chunkWords.length);
+            const pageWords = chunkWords.slice(startIndex, endIndex);
+            
+            pageWords.forEach((wordData, index) => {
+                const wordElement = createWordPage(wordData, startIndex + index + 1);
+                container.appendChild(wordElement);
+            });
+            
+            // 更新UI状态
+            updateUIState(totalPages);
+        }
+
+        // 创建单词页面
+        function createWordPage(wordData, wordNumber) {
+            const wordKey = `${ebookState.currentUnit}-${wordData.word}`;
+            const isMastered = ebookState.masteredWords[wordKey];
+            const isDifficult = ebookState.difficultWords[wordKey];
+            const isBookmarked = ebookState.bookmarks.some(b => b.unit === ebookState.currentUnit && 
+                                                              b.chunk === ebookState.currentChunk && 
+                                                              b.word === wordData.word);
+            
+            const page = document.createElement('div');
+            page.className = 'ebook-page p-8';
+            page.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[500px]">
+                    <!-- 左侧：英文内容 -->
+                    <div class="word-column pr-8">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">单词 ${wordNumber}</span>
+                                <h2 class="text-3xl font-bold text-gray-800 dark:text-white mt-1">${wordData.word}</h2>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="pronounce-word p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" 
+                                        data-word="${wordData.word}">
+                                    <i class="fa fa-volume-up"></i>
+                                </button>
+                                <button class="toggle-bookmark p-2 text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                                        data-word="${wordData.word}">
+                                    <i class="fa ${isBookmarked ? 'fa-bookmark' : 'fa-bookmark-o'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            ${wordData.phonetic ? `
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">音标</h3>
+                                    <p class="text-lg text-gray-700 dark:text-gray-300 font-mono">${wordData.phonetic}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${wordData.partOfSpeech ? `
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">词性</h3>
+                                    <p class="text-lg text-gray-700 dark:text-gray-300">${wordData.partOfSpeech}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${wordData.derivative ? `
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">派生词</h3>
+                                    <p class="text-lg text-gray-700 dark:text-gray-300">${wordData.derivative}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- 学习状态指示 -->
+                        <div class="mt-8 flex space-x-3">
+                            ${isMastered ? `
+                                <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">
+                                    <i class="fa fa-check mr-1"></i>已掌握
+                                </span>
+                            ` : ''}
+                            ${isDifficult ? `
+                                <span class="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm">
+                                    <i class="fa fa-bookmark mr-1"></i>生词
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：中文内容 -->
+                    <div class="pl-8">
+                        <div class="space-y-6">
+                            ${wordData.definition ? `
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">中文释义</h3>
+                                    <p class="text-lg text-gray-800 dark:text-white leading-relaxed">${wordData.definition}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${wordData.example ? `
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">真题例句</h3>
+                                    <p class="text-lg text-gray-700 dark:text-gray-300 italic leading-relaxed">${wordData.example}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${wordData.memory ? `
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">记忆方法</h3>
+                                    <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">${wordData.memory}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- 操作按钮 -->
+                        <div class="mt-8 flex space-x-3">
+                            <button class="mark-mastered flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors"
+                                    data-word="${wordData.word}">
+                                <i class="fa fa-check mr-2"></i>标记掌握
+                            </button>
+                            <button class="mark-difficult flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition-colors"
+                                    data-word="${wordData.word}">
+                                <i class="fa fa-bookmark mr-2"></i>标记生词
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加事件监听
+            page.querySelector('.pronounce-word').addEventListener('click', function() {
+                pronounceWord(this.dataset.word);
+            });
+            
+            page.querySelector('.toggle-bookmark').addEventListener('click', function() {
+                toggleBookmark(this.dataset.word);
+            });
+            
+            page.querySelector('.mark-mastered').addEventListener('click', function() {
+                markWordAsMastered(this.dataset.word);
+            });
+            
+            page.querySelector('.mark-difficult').addEventListener('click', function() {
+                toggleDifficultWord(this.dataset.word);
+            });
+            
+            return page;
+        }
+
+        // 获取当前块的单词
+        function getCurrentChunkWords() {
+            const unitWords = ebookState.units[ebookState.currentUnit] || [];
+            const chunkSize = 20; // 默认块大小，可以从主页面同步
+            const startIndex = (ebookState.currentChunk - 1) * chunkSize;
+            const endIndex = Math.min(startIndex + chunkSize, unitWords.length);
+            
+            return unitWords.slice(startIndex, endIndex);
+        }
+
+        // 更新UI状态
+        function updateUIState(totalPages) {
+            // 更新当前位置显示
+            document.getElementById('current-position').textContent = 
+                `单元 ${ebookState.currentUnit} - 页 ${ebookState.currentPage}/${totalPages}`;
+            
+            // 更新进度条
+            const progress = (ebookState.currentPage / totalPages) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-unit').textContent = ebookState.currentUnit;
+            
+            // 更新书签指示器
+            const hasBookmark = ebookState.bookmarks.some(b => 
+                b.unit === ebookState.currentUnit && 
+                b.chunk === ebookState.currentChunk && 
+                b.page === ebookState.currentPage
+            );
+            
+            const bookmarkIndicator = document.getElementById('bookmark-indicator');
+            if (hasBookmark) {
+                bookmarkIndicator.classList.remove('hidden');
+            } else {
+                bookmarkIndicator.classList.add('hidden');
+            }
+            
+            // 更新页面跳转选项
+            updateJumpOptions(totalPages);
+        }
+
+        // 发音功能
+        function pronounceWord(word) {
+            const audioUrl = `https://dict.youdao.com/dictvoice?type=0&audio=${encodeURIComponent(word)}`;
+            const audio = new Audio(audioUrl);
+            audio.play().catch(e => {
+                console.warn('发音失败:', e);
+            });
+        }
+
+        // 标记单词为已掌握
+        function markWordAsMastered(word) {
+            const wordKey = `${ebookState.currentUnit}-${word}`;
+            ebookState.masteredWords[wordKey] = true;
+            
+            // 同步到主页面
+            syncToMainApp();
+            
+            // 重新渲染当前页面
+            renderEbookContent();
+        }
+
+        // 切换生词状态
+        function toggleDifficultWord(word) {
+            const wordKey = `${ebookState.currentUnit}-${word}`;
+            
+            if (ebookState.difficultWords[wordKey]) {
+                delete ebookState.difficultWords[wordKey];
+            } else {
+                ebookState.difficultWords[wordKey] = true;
+            }
+            
+            // 同步到主页面
+            syncToMainApp();
+            
+            // 重新渲染当前页面
+            renderEbookContent();
+        }
+
+        // 同步数据到主页面
+        function syncToMainApp() {
+            try {
+                const mainAppData = localStorage.getItem('vocabularyAppState');
+                if (mainAppData) {
+                    const parsedData = JSON.parse(mainAppData);
+                    
+                    // 更新学习状态
+                    parsedData.masteredWords = { ...parsedData.masteredWords, ...ebookState.masteredWords };
+                    parsedData.difficultWords = { ...parsedData.difficultWords, ...ebookState.difficultWords };
+                    parsedData.correctCounts = { ...parsedData.correctCounts, ...ebookState.correctCounts };
+                    
+                    // 保存回localStorage
+                    localStorage.setItem('vocabularyAppState', JSON.stringify(parsedData));
+                    
+                    console.log('数据同步到主页面完成');
+                }
+            } catch (error) {
+                console.error('同步数据失败:', error);
+            }
+        }
+
+        // 书签功能
+        function loadBookmarks() {
+            const savedBookmarks = localStorage.getItem('ebook-bookmarks');
+            if (savedBookmarks) {
+                ebookState.bookmarks = JSON.parse(savedBookmarks);
+            }
+        }
+
+        function saveBookmarks() {
+            localStorage.setItem('ebook-bookmarks', JSON.stringify(ebookState.bookmarks));
+        }
+
+        function toggleBookmark(word) {
+            const bookmark = {
+                unit: ebookState.currentUnit,
+                chunk: ebookState.currentChunk,
+                page: ebookState.currentPage,
+                word: word,
+                timestamp: new Date().toISOString()
+            };
+            
+            const existingIndex = ebookState.bookmarks.findIndex(b => 
+                b.unit === bookmark.unit && 
+                b.chunk === bookmark.chunk && 
+                b.word === bookmark.word
+            );
+            
+            if (existingIndex >= 0) {
+                // 移除书签
+                ebookState.bookmarks.splice(existingIndex, 1);
+            } else {
+                // 添加书签
+                ebookState.bookmarks.push(bookmark);
+            }
+            
+            saveBookmarks();
+            renderEbookContent();
+        }
+
+        function addCurrentBookmark() {
+            const currentWords = getCurrentChunkWords();
+            const currentWordIndex = (ebookState.currentPage - 1) * ebookState.settings.wordsPerPage;
+            
+            if (currentWords[currentWordIndex]) {
+                toggleBookmark(currentWords[currentWordIndex].word);
+            }
+        }
+
+        // 页面跳转功能
+        function showPageJumpModal() {
+            document.getElementById('page-jump-modal').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('page-jump-modal').classList.add('opacity-100', 'pointer-events-auto');
+        }
+
+        function closePageJumpModal() {
+            document.getElementById('page-jump-modal').classList.remove('opacity-100', 'pointer-events-auto');
+            document.getElementById('page-jump-modal').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function updateJumpOptions(totalPages) {
+            const unitSelect = document.getElementById('jump-unit-select');
+            const chunkSelect = document.getElementById('jump-chunk-select');
+            const pageInput = document.getElementById('jump-page-input');
+            
+            // 更新单元选项
+            unitSelect.innerHTML = '';
+            Object.keys(ebookState.units).forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = `单元 ${unit}`;
+                if (parseInt(unit) === ebookState.currentUnit) {
+                    option.selected = true;
+                }
+                unitSelect.appendChild(option);
+            });
+            
+            // 更新块选项
+            updateChunkOptions();
+            
+            // 更新页面输入
+            pageInput.value = ebookState.currentPage;
+            pageInput.max = totalPages;
+        }
+
+        function updateChunkOptions() {
+            const unit = parseInt(document.getElementById('jump-unit-select').value);
+            const chunkSelect = document.getElementById('jump-chunk-select');
+            
+            chunkSelect.innerHTML = '';
+            
+            const unitWords = ebookState.units[unit] || [];
+            const chunkSize = 20;
+            const totalChunks = Math.ceil(unitWords.length / chunkSize);
+            
+            for (let i = 1; i <= totalChunks; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `块 ${i}`;
+                if (i === ebookState.currentChunk && unit === ebookState.currentUnit) {
+                    option.selected = true;
+                }
+                chunkSelect.appendChild(option);
+            }
+        }
+
+        function handlePageJump() {
+            const unit = parseInt(document.getElementById('jump-unit-select').value);
+            const chunk = parseInt(document.getElementById('jump-chunk-select').value);
+            const page = parseInt(document.getElementById('jump-page-input').value);
+            
+            ebookState.currentUnit = unit;
+            ebookState.currentChunk = chunk;
+            ebookState.currentPage = Math.max(1, page);
+            
+            closePageJumpModal();
+            renderEbookContent();
+        }
+
+        // 书签管理弹窗
+        function showBookmarkModal() {
+            renderBookmarkList();
+            document.getElementById('bookmark-modal').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('bookmark-modal').classList.add('opacity-100', 'pointer-events-auto');
+        }
+
+        function closeBookmarkModal() {
+            document.getElementById('bookmark-modal').classList.remove('opacity-100', 'pointer-events-auto');
+            document.getElementById('bookmark-modal').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function renderBookmarkList() {
+            const list = document.getElementById('bookmark-list');
+            
+            if (ebookState.bookmarks.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <i class="fa fa-bookmark-o text-3xl mb-3 opacity-50"></i>
+                        <p>暂无书签</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = ebookState.bookmarks.map((bookmark, index) => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-800 dark:text-white">${bookmark.word}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            单元 ${bookmark.unit} - 块 ${bookmark.chunk} - 页 ${bookmark.page}
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="jump-to-bookmark p-2 text-blue-500 hover:bg-blue-500/10 rounded transition-colors"
+                                data-index="${index}">
+                            <i class="fa fa-rocket"></i>
+                        </button>
+                        <button class="delete-bookmark p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                                data-index="${index}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 添加事件监听
+            list.querySelectorAll('.jump-to-bookmark').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    jumpToBookmark(index);
+                });
+            });
+            
+            list.querySelectorAll('.delete-bookmark').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    deleteBookmark(index);
+                });
+            });
+        }
+
+        function jumpToBookmark(index) {
+            const bookmark = ebookState.bookmarks[index];
+            ebookState.currentUnit = bookmark.unit;
+            ebookState.currentChunk = bookmark.chunk;
+            ebookState.currentPage = bookmark.page;
+            
+            closeBookmarkModal();
+            renderEbookContent();
+        }
+
+        function deleteBookmark(index) {
+            ebookState.bookmarks.splice(index, 1);
+            saveBookmarks();
+            renderBookmarkList();
+            renderEbookContent(); // 更新书签指示器
+        }
+
+        function clearAllBookmarks() {
+            if (confirm('确定要清空所有书签吗？')) {
+                ebookState.bookmarks = [];
+                saveBookmarks();
+                renderBookmarkList();
+                renderEbookContent();
+            }
+        }
+
+        // 其他功能
+        function toggleTheme() {
+            ebookState.settings.darkMode = !ebookState.settings.darkMode;
+            
+            if (ebookState.settings.darkMode) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('ebook-theme', 'dark');
+                document.getElementById('theme-toggle').innerHTML = '<i class="fa fa-sun"></i>';
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('ebook-theme', 'light');
+                document.getElementById('theme-toggle').innerHTML = '<i class="fa fa-moon"></i>';
+            }
+        }
+
+        function toggleAutoPronounce() {
+            ebookState.settings.autoPronounce = !ebookState.settings.autoPronounce;
+            const btn = document.getElementById('pronounce-toggle');
+            
+            if (ebookState.settings.autoPronounce) {
+                btn.classList.remove('bg-gray-500');
+                btn.classList.add('bg-purple-500');
+            } else {
+                btn.classList.remove('bg-purple-500');
+                btn.classList.add('bg-gray-500');
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('全屏请求失败:', err);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // 键盘导航
+        function handleKeyboardNavigation(e) {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    navigatePage(-1);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    navigatePage(1);
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    // 空格键发音当前单词
+                    const currentWords = getCurrentChunkWords();
+                    const currentWordIndex = (ebookState.currentPage - 1) * ebookState.settings.wordsPerPage;
+                    if (currentWords[currentWordIndex]) {
+                        pronounceWord(currentWords[currentWordIndex].word);
+                    }
+                    break;
+                case 'b':
+                    e.preventDefault();
+                    toggleBookmarkForCurrentWord();
+                    break;
+            }
+        }
+
+        function navigatePage(direction) {
+            const currentWords = getCurrentChunkWords();
+            const totalPages = Math.ceil(currentWords.length / ebookState.settings.wordsPerPage);
+            
+            const newPage = ebookState.currentPage + direction;
+            if (newPage >= 1 && newPage <= totalPages) {
+                ebookState.currentPage = newPage;
+                renderEbookContent();
+            }
+        }
+
+        function toggleBookmarkForCurrentWord() {
+            const currentWords = getCurrentChunkWords();
+            const currentWordIndex = (ebookState.currentPage - 1) * ebookState.settings.wordsPerPage;
+            
+            if (currentWords[currentWordIndex]) {
+                toggleBookmark(currentWords[currentWordIndex].word);
+            }
+        }
+
+        // 工具函数
+        function showEmptyState() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

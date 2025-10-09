@@ -13,20 +13,26 @@
     <style>
         /* 电子书专用样式 */
         .ebook-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             min-height: 100vh;
+            padding: 20px;
         }
         
         .ebook-page {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
         }
         
         .ebook-page:hover {
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
         }
         
         .word-column {
@@ -74,6 +80,114 @@
             z-index: 90;
         }
         
+        /* 书籍布局 */
+        .book-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .book-page {
+            flex: 1;
+            min-width: 300px;
+            max-width: 100%;
+        }
+        
+        @media (min-width: 768px) {
+            .book-page {
+                max-width: calc(50% - 20px);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .book-page {
+                max-width: calc(33.333% - 20px);
+            }
+        }
+        
+        @media (min-width: 1400px) {
+            .book-page {
+                max-width: calc(25% - 20px);
+            }
+        }
+        
+        /* 翻页效果 */
+        .page-container {
+            position: relative;
+            perspective: 1500px;
+        }
+        
+        .page {
+            transition: transform 0.6s ease;
+            transform-style: preserve-3d;
+        }
+        
+        .page.flipped {
+            transform: rotateY(-180deg);
+        }
+        
+        .page-front, .page-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .page-back {
+            transform: rotateY(180deg);
+        }
+        
+        /* 触摸滑动区域 */
+        .swipe-area {
+            position: absolute;
+            top: 0;
+            width: 20%;
+            height: 100%;
+            z-index: 10;
+            cursor: pointer;
+        }
+        
+        .swipe-left {
+            left: 0;
+        }
+        
+        .swipe-right {
+            right: 0;
+        }
+        
+        /* 字体大小控制 */
+        .font-size-small {
+            font-size: 0.875rem;
+        }
+        
+        .font-size-medium {
+            font-size: 1rem;
+        }
+        
+        .font-size-large {
+            font-size: 1.125rem;
+        }
+        
+        /* 阅读进度条 */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
+        .reading-progress-bar {
+            height: 100%;
+            background: #0047b1;
+            transition: width 0.3s ease;
+        }
+        
         /* 暗黑模式支持 */
         .dark .ebook-page {
             background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
@@ -86,13 +200,24 @@
         /* 打印样式 */
         @media print {
             .floating-controls,
-            .progress-tracker {
+            .progress-tracker,
+            .reading-progress {
                 display: none !important;
             }
             
             .ebook-page {
                 box-shadow: none !important;
                 background: white !important;
+            }
+            
+            .book-layout {
+                display: block;
+            }
+            
+            .book-page {
+                max-width: 100%;
+                margin-bottom: 20px;
+                break-inside: avoid;
             }
         }
     </style>
@@ -115,12 +240,17 @@
     </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- 阅读进度条 -->
+    <div class="reading-progress">
+        <div class="reading-progress-bar" id="reading-progress-bar" style="width: 0%"></div>
+    </div>
+
     <!-- 顶部简约导航 -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm py-3 px-4 mb-6">
+    <header class="bg-white dark:bg-gray-800 shadow-sm py-3 px-4 mb-6 sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <button onclick="window.location.href='index.html'" 
-                        class="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors">
+                        class="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors touch-button">
                     <i class="fa fa-arrow-left mr-2"></i>
                     <span>返回主页</span>
                 </button>
@@ -129,12 +259,25 @@
             
             <div class="flex items-center space-x-4">
                 <!-- 学习状态指示器 -->
-                <div id="learning-stats" class="text-sm text-gray-600 dark:text-gray-300">
+                <div id="learning-stats" class="text-sm text-gray-600 dark:text-gray-300 hidden md:block">
                     <span id="current-position">单元 1 - 页 1</span>
                 </div>
                 
+                <!-- 字体大小控制 -->
+                <div class="flex items-center space-x-2">
+                    <button id="font-size-decrease" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors touch-button">
+                        <i class="fa fa-font"></i>
+                        <i class="fa fa-minus text-xs"></i>
+                    </button>
+                    <span class="text-xs text-gray-500 dark:text-gray-400" id="font-size-label">中</span>
+                    <button id="font-size-increase" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors touch-button">
+                        <i class="fa fa-font"></i>
+                        <i class="fa fa-plus text-xs"></i>
+                    </button>
+                </div>
+                
                 <!-- 主题切换 -->
-                <button id="theme-toggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                <button id="theme-toggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 touch-button">
                     <i class="fa fa-moon"></i>
                 </button>
             </div>
@@ -143,8 +286,7 @@
 
     <!-- 电子书主体内容 -->
     <main class="ebook-container px-4 pb-20">
-        <!-- 单词显示区域 -->
-        <div id="ebook-content" class="space-y-6">
+        <div class="book-layout" id="ebook-content">
             <!-- 页面将通过JavaScript动态生成 -->
         </div>
         
@@ -160,7 +302,7 @@
             <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">暂无单词数据</h3>
             <p class="text-gray-500 dark:text-gray-400 mb-4">请先在主页面导入单词数据</p>
             <button onclick="window.location.href='index.html'" 
-                    class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-colors">
+                    class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-colors touch-button">
                 前往主页面
             </button>
         </div>
@@ -171,7 +313,7 @@
         <!-- 主控制按钮 -->
         <div class="relative">
             <button id="main-control-btn" 
-                    class="w-14 h-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110">
+                    class="w-14 h-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 touch-button">
                 <i class="fa fa-book text-xl"></i>
             </button>
             
@@ -183,27 +325,39 @@
         
         <!-- 控制按钮组 -->
         <div class="control-buttons space-y-3 mt-4">
+            <!-- 上一页 -->
+            <button id="prev-page-btn" 
+                    class="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all touch-button">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            
+            <!-- 下一页 -->
+            <button id="next-page-btn" 
+                    class="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all touch-button">
+                <i class="fa fa-chevron-right"></i>
+            </button>
+            
             <!-- 页面跳转 -->
             <button id="page-jump-btn" 
-                    class="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                    class="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all touch-button">
                 <i class="fa fa-exchange"></i>
             </button>
             
             <!-- 书签管理 -->
             <button id="bookmark-btn" 
-                    class="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                    class="w-12 h-12 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all touch-button">
                 <i class="fa fa-bookmark"></i>
             </button>
             
             <!-- 发音开关 -->
             <button id="pronounce-toggle" 
-                    class="w-12 h-12 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                    class="w-12 h-12 bg-purple-500 hover:bg-purple-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all touch-button">
                 <i class="fa fa-volume-up"></i>
             </button>
             
             <!-- 全屏模式 -->
             <button id="fullscreen-btn" 
-                    class="w-12 h-12 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
+                    class="w-12 h-12 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all touch-button">
                 <i class="fa fa-expand"></i>
             </button>
         </div>
@@ -231,7 +385,7 @@
         <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 mx-4">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white">页面跳转</h3>
-                <button id="close-jump-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                <button id="close-jump-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors touch-button">
                     <i class="fa fa-times text-lg"></i>
                 </button>
             </div>
@@ -257,7 +411,7 @@
                            class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
                 </div>
                 
-                <button id="confirm-jump" class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-colors">
+                <button id="confirm-jump" class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-colors touch-button">
                     <i class="fa fa-rocket mr-2"></i>立即跳转
                 </button>
             </div>
@@ -270,7 +424,7 @@
         <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 mx-4">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white">书签管理</h3>
-                <button id="close-bookmark-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                <button id="close-bookmark-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors touch-button">
                     <i class="fa fa-times text-lg"></i>
                 </button>
             </div>
@@ -284,10 +438,10 @@
             </div>
             
             <div class="flex space-x-3">
-                <button id="add-bookmark" class="flex-1 bg-primary hover:bg-primary/90 text-white py-2 rounded-lg transition-colors">
+                <button id="add-bookmark" class="flex-1 bg-primary hover:bg-primary/90 text-white py-2 rounded-lg transition-colors touch-button">
                     <i class="fa fa-plus mr-2"></i>添加书签
                 </button>
-                <button id="clear-bookmarks" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
+                <button id="clear-bookmarks" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors touch-button">
                     <i class="fa fa-trash mr-2"></i>清空全部
                 </button>
             </div>
@@ -306,12 +460,16 @@
             settings: {
                 autoPronounce: true,
                 darkMode: false,
-                wordsPerPage: 1 // 每页显示单词数，可以调整为多个
+                wordsPerPage: 1,
+                fontSize: 'medium' // small, medium, large
             },
             // 从主页面同步的学习状态
             masteredWords: {},
             difficultWords: {},
-            correctCounts: {}
+            correctCounts: {},
+            // 触摸滑动相关
+            touchStartX: 0,
+            touchEndX: 0
         };
 
         // 初始化电子书
@@ -332,6 +490,13 @@
                 ebookState.settings.darkMode = true;
             }
             
+            // 检查字体大小设置
+            const savedFontSize = localStorage.getItem('ebook-font-size');
+            if (savedFontSize) {
+                ebookState.settings.fontSize = savedFontSize;
+                applyFontSize();
+            }
+            
             // 加载书签
             loadBookmarks();
         }
@@ -341,7 +506,13 @@
             // 主题切换
             document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
             
+            // 字体大小控制
+            document.getElementById('font-size-decrease').addEventListener('click', decreaseFontSize);
+            document.getElementById('font-size-increase').addEventListener('click', increaseFontSize);
+            
             // 控制按钮
+            document.getElementById('prev-page-btn').addEventListener('click', navigateToPrevPage);
+            document.getElementById('next-page-btn').addEventListener('click', navigateToNextPage);
             document.getElementById('page-jump-btn').addEventListener('click', showPageJumpModal);
             document.getElementById('bookmark-btn').addEventListener('click', showBookmarkModal);
             document.getElementById('pronounce-toggle').addEventListener('click', toggleAutoPronounce);
@@ -363,6 +534,13 @@
             
             // 键盘导航
             document.addEventListener('keydown', handleKeyboardNavigation);
+            
+            // 触摸事件
+            document.addEventListener('touchstart', handleTouchStart, false);
+            document.addEventListener('touchend', handleTouchEnd, false);
+            
+            // 点击翻页区域
+            document.addEventListener('click', handlePageClick);
         }
 
         // 加载电子书数据
@@ -432,17 +610,46 @@
             const endIndex = Math.min(startIndex + wordsPerPage, chunkWords.length);
             const pageWords = chunkWords.slice(startIndex, endIndex);
             
+            // 创建页面容器
+            const pageContainer = document.createElement('div');
+            pageContainer.className = 'book-page';
+            
+            // 创建翻页容器
+            const pageElement = document.createElement('div');
+            pageElement.className = 'page-container';
+            
+            // 创建页面内容
+            const pageContent = document.createElement('div');
+            pageContent.className = 'ebook-page p-6';
+            
+            // 添加滑动区域
+            const swipeLeft = document.createElement('div');
+            swipeLeft.className = 'swipe-area swipe-left';
+            pageContent.appendChild(swipeLeft);
+            
+            const swipeRight = document.createElement('div');
+            swipeRight.className = 'swipe-area swipe-right';
+            pageContent.appendChild(swipeRight);
+            
+            // 添加单词内容
             pageWords.forEach((wordData, index) => {
-                const wordElement = createWordPage(wordData, startIndex + index + 1);
-                container.appendChild(wordElement);
+                const wordElement = createWordElement(wordData, startIndex + index + 1);
+                pageContent.appendChild(wordElement);
             });
+            
+            pageElement.appendChild(pageContent);
+            pageContainer.appendChild(pageElement);
+            container.appendChild(pageContainer);
             
             // 更新UI状态
             updateUIState(totalPages);
+            
+            // 更新阅读进度
+            updateReadingProgress(totalPages);
         }
 
-        // 创建单词页面
-        function createWordPage(wordData, wordNumber) {
+        // 创建单词元素
+        function createWordElement(wordData, wordNumber) {
             const wordKey = `${ebookState.currentUnit}-${wordData.word}`;
             const isMastered = ebookState.masteredWords[wordKey];
             const isDifficult = ebookState.difficultWords[wordKey];
@@ -450,125 +657,135 @@
                                                               b.chunk === ebookState.currentChunk && 
                                                               b.word === wordData.word);
             
-            const page = document.createElement('div');
-            page.className = 'ebook-page p-8';
-            page.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[500px]">
-                    <!-- 左侧：英文内容 -->
-                    <div class="word-column pr-8">
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <span class="text-sm text-gray-500 dark:text-gray-400">单词 ${wordNumber}</span>
-                                <h2 class="text-3xl font-bold text-gray-800 dark:text-white mt-1">${wordData.word}</h2>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="pronounce-word p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" 
-                                        data-word="${wordData.word}">
-                                    <i class="fa fa-volume-up"></i>
-                                </button>
-                                <button class="toggle-bookmark p-2 text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors"
-                                        data-word="${wordData.word}">
-                                    <i class="fa ${isBookmarked ? 'fa-bookmark' : 'fa-bookmark-o'}"></i>
-                                </button>
-                            </div>
+            const wordElement = document.createElement('div');
+            wordElement.className = 'word-item mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0';
+            wordElement.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <span class="text-xs text-gray-500 dark:text-gray-400 mr-2">${wordNumber}</span>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white">${wordData.word}</h2>
+                            ${isBookmarked ? '<i class="fa fa-bookmark text-yellow-500 ml-2"></i>' : ''}
                         </div>
-                        
-                        <div class="space-y-4">
+                        <div class="flex flex-wrap items-center gap-2 mt-1">
                             ${wordData.phonetic ? `
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">音标</h3>
-                                    <p class="text-lg text-gray-700 dark:text-gray-300 font-mono">${wordData.phonetic}</p>
-                                </div>
+                                <span class="text-gray-600 dark:text-gray-300 text-sm">${wordData.phonetic}</span>
                             ` : ''}
-                            
                             ${wordData.partOfSpeech ? `
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">词性</h3>
-                                    <p class="text-lg text-gray-700 dark:text-gray-300">${wordData.partOfSpeech}</p>
-                                </div>
-                            ` : ''}
-                            
-                            ${wordData.derivative ? `
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">派生词</h3>
-                                    <p class="text-lg text-gray-700 dark:text-gray-300">${wordData.derivative}</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                        
-                        <!-- 学习状态指示 -->
-                        <div class="mt-8 flex space-x-3">
-                            ${isMastered ? `
-                                <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">
-                                    <i class="fa fa-check mr-1"></i>已掌握
-                                </span>
-                            ` : ''}
-                            ${isDifficult ? `
-                                <span class="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm">
-                                    <i class="fa fa-bookmark mr-1"></i>生词
-                                </span>
+                                <span class="text-gray-600 dark:text-gray-300 text-sm">${wordData.partOfSpeech}</span>
                             ` : ''}
                         </div>
                     </div>
+                    <div class="flex items-center space-x-1">
+                        <button class="pronounce-word text-primary hover:text-primary/80 transition-colors duration-300 p-1 touch-button" 
+                                data-word="${wordData.word}">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                        <button class="toggle-bookmark text-yellow-500 hover:text-yellow-600 transition-colors duration-300 p-1 touch-button"
+                                data-word="${wordData.word}">
+                            <i class="fa ${isBookmarked ? 'fa-bookmark' : 'fa-bookmark-o'}"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    ${wordData.definition ? `
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">释义</h3>
+                            <p class="text-gray-700 dark:text-gray-300">${wordData.definition}</p>
+                        </div>
+                    ` : ''}
                     
-                    <!-- 右侧：中文内容 -->
-                    <div class="pl-8">
-                        <div class="space-y-6">
-                            ${wordData.definition ? `
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">中文释义</h3>
-                                    <p class="text-lg text-gray-800 dark:text-white leading-relaxed">${wordData.definition}</p>
-                                </div>
-                            ` : ''}
-                            
-                            ${wordData.example ? `
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">真题例句</h3>
-                                    <p class="text-lg text-gray-700 dark:text-gray-300 italic leading-relaxed">${wordData.example}</p>
-                                </div>
-                            ` : ''}
-                            
-                            ${wordData.memory ? `
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">记忆方法</h3>
-                                    <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">${wordData.memory}</p>
-                                </div>
-                            ` : ''}
+                    ${wordData.example ? `
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">真题例句</h3>
+                            <p class="text-gray-700 dark:text-gray-300 italic">${wordData.example}</p>
                         </div>
-                        
-                        <!-- 操作按钮 -->
-                        <div class="mt-8 flex space-x-3">
-                            <button class="mark-mastered flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors"
-                                    data-word="${wordData.word}">
-                                <i class="fa fa-check mr-2"></i>标记掌握
-                            </button>
-                            <button class="mark-difficult flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition-colors"
-                                    data-word="${wordData.word}">
-                                <i class="fa fa-bookmark mr-2"></i>标记生词
-                            </button>
+                    ` : ''}
+                    
+                    ${wordData.memory ? `
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">记忆方法</h3>
+                            <p class="text-gray-700 dark:text-gray-300">${wordData.memory}</p>
                         </div>
+                    ` : ''}
+                    
+                    ${wordData.derivative ? `
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">派生词</h3>
+                            <p class="text-gray-700 dark:text-gray-300">${wordData.derivative}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <!-- 学习状态和操作按钮 -->
+                <div class="flex justify-between items-center mt-4">
+                    <div class="flex items-center space-x-2">
+                        ${isMastered ? `
+                            <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs">
+                                <i class="fa fa-check mr-1"></i>已掌握
+                            </span>
+                        ` : ''}
+                        ${isDifficult ? `
+                            <span class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-xs">
+                                <i class="fa fa-bookmark mr-1"></i>生词
+                            </span>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        ${!isMastered ? `
+                            <button class="mark-mastered bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded transition-colors touch-button"
+                                    data-word="${wordData.word}">
+                                <i class="fa fa-check mr-1"></i>掌握
+                            </button>
+                        ` : `
+                            <button class="unmark-mastered bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded transition-colors touch-button"
+                                    data-word="${wordData.word}">
+                                <i class="fa fa-undo mr-1"></i>取消
+                            </button>
+                        `}
+                        ${!isDifficult ? `
+                            <button class="mark-difficult bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded transition-colors touch-button"
+                                    data-word="${wordData.word}">
+                                <i class="fa fa-bookmark mr-1"></i>生词
+                            </button>
+                        ` : `
+                            <button class="remove-difficult bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded transition-colors touch-button"
+                                    data-word="${wordData.word}">
+                                <i class="fa fa-times mr-1"></i>移除
+                            </button>
+                        `}
                     </div>
                 </div>
             `;
             
             // 添加事件监听
-            page.querySelector('.pronounce-word').addEventListener('click', function() {
+            wordElement.querySelector('.pronounce-word').addEventListener('click', function() {
                 pronounceWord(this.dataset.word);
             });
             
-            page.querySelector('.toggle-bookmark').addEventListener('click', function() {
+            wordElement.querySelector('.toggle-bookmark').addEventListener('click', function() {
                 toggleBookmark(this.dataset.word);
             });
             
-            page.querySelector('.mark-mastered').addEventListener('click', function() {
+            wordElement.querySelector('.mark-mastered')?.addEventListener('click', function() {
                 markWordAsMastered(this.dataset.word);
             });
             
-            page.querySelector('.mark-difficult').addEventListener('click', function() {
-                toggleDifficultWord(this.dataset.word);
+            wordElement.querySelector('.unmark-mastered')?.addEventListener('click', function() {
+                unmarkWordAsMastered(this.dataset.word);
             });
             
-            return page;
+            wordElement.querySelector('.mark-difficult')?.addEventListener('click', function() {
+                markWordAsDifficult(this.dataset.word);
+            });
+            
+            wordElement.querySelector('.remove-difficult')?.addEventListener('click', function() {
+                removeWordFromDifficult(this.dataset.word);
+            });
+            
+            return wordElement;
         }
 
         // 获取当前块的单词
@@ -610,6 +827,12 @@
             updateJumpOptions(totalPages);
         }
 
+        // 更新阅读进度
+        function updateReadingProgress(totalPages) {
+            const progress = (ebookState.currentPage / totalPages) * 100;
+            document.getElementById('reading-progress-bar').style.width = `${progress}%`;
+        }
+
         // 发音功能
         function pronounceWord(word) {
             const audioUrl = `https://dict.youdao.com/dictvoice?type=0&audio=${encodeURIComponent(word)}`;
@@ -629,23 +852,50 @@
             
             // 重新渲染当前页面
             renderEbookContent();
+            
+            showToast(`"${word}" 已标记为已掌握`, 'success');
         }
 
-        // 切换生词状态
-        function toggleDifficultWord(word) {
+        // 取消标记单词为已掌握
+        function unmarkWordAsMastered(word) {
             const wordKey = `${ebookState.currentUnit}-${word}`;
-            
-            if (ebookState.difficultWords[wordKey]) {
-                delete ebookState.difficultWords[wordKey];
-            } else {
-                ebookState.difficultWords[wordKey] = true;
-            }
+            delete ebookState.masteredWords[wordKey];
             
             // 同步到主页面
             syncToMainApp();
             
             // 重新渲染当前页面
             renderEbookContent();
+            
+            showToast(`"${word}" 已取消掌握标记`, 'info');
+        }
+
+        // 标记单词为生词
+        function markWordAsDifficult(word) {
+            const wordKey = `${ebookState.currentUnit}-${word}`;
+            ebookState.difficultWords[wordKey] = true;
+            
+            // 同步到主页面
+            syncToMainApp();
+            
+            // 重新渲染当前页面
+            renderEbookContent();
+            
+            showToast(`"${word}" 已添加到生词本`, 'info');
+        }
+
+        // 从生词本中移除单词
+        function removeWordFromDifficult(word) {
+            const wordKey = `${ebookState.currentUnit}-${word}`;
+            delete ebookState.difficultWords[wordKey];
+            
+            // 同步到主页面
+            syncToMainApp();
+            
+            // 重新渲染当前页面
+            renderEbookContent();
+            
+            showToast(`"${word}" 已从生词本中移除`, 'info');
         }
 
         // 同步数据到主页面
@@ -700,9 +950,11 @@
             if (existingIndex >= 0) {
                 // 移除书签
                 ebookState.bookmarks.splice(existingIndex, 1);
+                showToast(`"${word}" 书签已移除`, 'info');
             } else {
                 // 添加书签
                 ebookState.bookmarks.push(bookmark);
+                showToast(`"${word}" 已添加书签`, 'success');
             }
             
             saveBookmarks();
@@ -715,6 +967,24 @@
             
             if (currentWords[currentWordIndex]) {
                 toggleBookmark(currentWords[currentWordIndex].word);
+            }
+        }
+
+        // 页面导航功能
+        function navigateToPrevPage() {
+            if (ebookState.currentPage > 1) {
+                ebookState.currentPage--;
+                renderEbookContent();
+            }
+        }
+
+        function navigateToNextPage() {
+            const chunkWords = getCurrentChunkWords();
+            const totalPages = Math.ceil(chunkWords.length / ebookState.settings.wordsPerPage);
+            
+            if (ebookState.currentPage < totalPages) {
+                ebookState.currentPage++;
+                renderEbookContent();
             }
         }
 
@@ -822,11 +1092,11 @@
                         </div>
                     </div>
                     <div class="flex space-x-2">
-                        <button class="jump-to-bookmark p-2 text-blue-500 hover:bg-blue-500/10 rounded transition-colors"
+                        <button class="jump-to-bookmark p-2 text-blue-500 hover:bg-blue-500/10 rounded transition-colors touch-button"
                                 data-index="${index}">
                             <i class="fa fa-rocket"></i>
                         </button>
-                        <button class="delete-bookmark p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                        <button class="delete-bookmark p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors touch-button"
                                 data-index="${index}">
                             <i class="fa fa-trash"></i>
                         </button>
@@ -891,6 +1161,43 @@
             }
         }
 
+        function decreaseFontSize() {
+            if (ebookState.settings.fontSize === 'large') {
+                ebookState.settings.fontSize = 'medium';
+            } else if (ebookState.settings.fontSize === 'medium') {
+                ebookState.settings.fontSize = 'small';
+            }
+            applyFontSize();
+        }
+
+        function increaseFontSize() {
+            if (ebookState.settings.fontSize === 'small') {
+                ebookState.settings.fontSize = 'medium';
+            } else if (ebookState.settings.fontSize === 'medium') {
+                ebookState.settings.fontSize = 'large';
+            }
+            applyFontSize();
+        }
+
+        function applyFontSize() {
+            // 移除现有的字体大小类
+            document.body.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+            
+            // 添加新的字体大小类
+            document.body.classList.add(`font-size-${ebookState.settings.fontSize}`);
+            
+            // 更新字体大小标签
+            const sizeLabels = {
+                'small': '小',
+                'medium': '中',
+                'large': '大'
+            };
+            document.getElementById('font-size-label').textContent = sizeLabels[ebookState.settings.fontSize];
+            
+            // 保存设置
+            localStorage.setItem('ebook-font-size', ebookState.settings.fontSize);
+        }
+
         function toggleAutoPronounce() {
             ebookState.settings.autoPronounce = !ebookState.settings.autoPronounce;
             const btn = document.getElementById('pronounce-toggle');
@@ -898,9 +1205,11 @@
             if (ebookState.settings.autoPronounce) {
                 btn.classList.remove('bg-gray-500');
                 btn.classList.add('bg-purple-500');
+                showToast('自动发音已开启', 'success');
             } else {
                 btn.classList.remove('bg-purple-500');
                 btn.classList.add('bg-gray-500');
+                showToast('自动发音已关闭', 'info');
             }
         }
 
@@ -908,6 +1217,7 @@
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
                     console.log('全屏请求失败:', err);
+                    showToast('无法进入全屏模式', 'error');
                 });
             } else {
                 if (document.exitFullscreen) {
@@ -921,11 +1231,11 @@
             switch(e.key) {
                 case 'ArrowLeft':
                     e.preventDefault();
-                    navigatePage(-1);
+                    navigateToPrevPage();
                     break;
                 case 'ArrowRight':
                     e.preventDefault();
-                    navigatePage(1);
+                    navigateToNextPage();
                     break;
                 case ' ':
                     e.preventDefault();
@@ -940,17 +1250,52 @@
                     e.preventDefault();
                     toggleBookmarkForCurrentWord();
                     break;
+                case 'Escape':
+                    // ESC键退出全屏
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    }
+                    break;
             }
         }
 
-        function navigatePage(direction) {
-            const currentWords = getCurrentChunkWords();
-            const totalPages = Math.ceil(currentWords.length / ebookState.settings.wordsPerPage);
+        // 触摸滑动翻页
+        function handleTouchStart(e) {
+            ebookState.touchStartX = e.changedTouches[0].screenX;
+        }
+
+        function handleTouchEnd(e) {
+            ebookState.touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }
+
+        function handleSwipe() {
+            const swipeThreshold = 50; // 滑动阈值
+            const swipeDistance = ebookState.touchEndX - ebookState.touchStartX;
             
-            const newPage = ebookState.currentPage + direction;
-            if (newPage >= 1 && newPage <= totalPages) {
-                ebookState.currentPage = newPage;
-                renderEbookContent();
+            if (Math.abs(swipeDistance) > swipeThreshold) {
+                if (swipeDistance > 0) {
+                    // 向右滑动，上一页
+                    navigateToPrevPage();
+                } else {
+                    // 向左滑动，下一页
+                    navigateToNextPage();
+                }
+            }
+        }
+
+        // 点击翻页区域
+        function handlePageClick(e) {
+            const pageWidth = window.innerWidth;
+            const clickX = e.clientX;
+            
+            // 点击左侧20%区域，上一页
+            if (clickX < pageWidth * 0.2) {
+                navigateToPrevPage();
+            }
+            // 点击右侧20%区域，下一页
+            else if (clickX > pageWidth * 0.8) {
+                navigateToNextPage();
             }
         }
 
@@ -967,6 +1312,34 @@
         function showEmptyState() {
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('empty-state').classList.remove('hidden');
+        }
+
+        // Toast提示功能
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colors = {
+                info: 'bg-blue-500',
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500'
+            };
+            
+            toast.className = `fixed bottom-4 right-4 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 opacity-0 transform translate-y-4 ${colors[type]} z-50`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-4');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
         }
     </script>
 </body>
